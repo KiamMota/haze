@@ -1,6 +1,6 @@
-#include "log.h"
 #include "modules/core/audio/HazeEngine.h"
 #include "modules/core/audio/HazeSample.h"
+#include "modules/core/helpers/log.h"
 #include <klib/kfile.h>
 
 int main(void) {
@@ -10,6 +10,7 @@ int main(void) {
   KFile *file = kfile_open("shooting_stars.mp3", KFILE_READ);
   if (!file) {
     HazeLogFatal("arquivo não encontrado");
+    kfile_free(&file);
     return 1;
   }
 
