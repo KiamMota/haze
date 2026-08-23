@@ -23,3 +23,4 @@ void HazeMixerFree(HazeMixer **m) {
     KFREE(*m);
     *m = NULL;
 }
+
