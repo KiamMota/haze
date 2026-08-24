@@ -1,6 +1,7 @@
 #ifndef HAZECHANNEL_DEC
 #define HAZECHANNEL_DEC
 
+
 typedef struct {
   float Volume;
   float Pan;

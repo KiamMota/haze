@@ -1,0 +1,10 @@
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\3A49CA69BEBC34B27FBE58537F2311FC\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/kimaspc/me/haze/b/_deps/klib-subbuild -BC:/Users/kimaspc/me/haze/b/_deps/klib-subbuild --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate.slnx
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

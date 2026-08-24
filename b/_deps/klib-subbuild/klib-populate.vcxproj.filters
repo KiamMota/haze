@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\fd0344d6ed9e7714889181af59b7bbf0\klib-populate-mkdir.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\fd0344d6ed9e7714889181af59b7bbf0\klib-populate-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\fd0344d6ed9e7714889181af59b7bbf0\klib-populate-update.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\fd0344d6ed9e7714889181af59b7bbf0\klib-populate-patch.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\fd0344d6ed9e7714889181af59b7bbf0\klib-populate-configure.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\fd0344d6ed9e7714889181af59b7bbf0\klib-populate-build.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\fd0344d6ed9e7714889181af59b7bbf0\klib-populate-install.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\fd0344d6ed9e7714889181af59b7bbf0\klib-populate-test.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\441d3016f2df206a0b2f2658826891d7\klib-populate-complete.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\3a49ca69bebc34b27fbe58537f2311fc\klib-populate.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\klib-populate" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{8C419BBA-F1FD-3EA7-8FE0-D9E1BEC4F1E3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

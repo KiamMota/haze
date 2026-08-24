@@ -12,7 +12,7 @@ bool HazeSampleInit(HazeSample *s, KBuffer *buf) {
   if (ma_sound_init_from_data_source(HazeEngineGet(), &s->decoder, 0, NULL,
                                      &s->handle) != MA_SUCCESS) {
     ma_decoder_uninit(&s->decoder);
-    return false;
+    return false
   }
   return true;
 }

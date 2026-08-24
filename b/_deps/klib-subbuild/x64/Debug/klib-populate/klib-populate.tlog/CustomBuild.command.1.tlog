@@ -1,0 +1,150 @@
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\FD0344D6ED9E7714889181AF59B7BBF0\KLIB-POPULATE-MKDIR.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -Dcfgdir=/Debug -P C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/tmp/klib-populate-mkdirs.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/src/klib-populate-stamp/Debug/klib-populate-mkdir
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\FD0344D6ED9E7714889181AF59B7BBF0\KLIB-POPULATE-DOWNLOAD.RULE
+setlocal
+cd C:\Users\kimaspc\me\haze\b\_deps
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/tmp/klib-populate-gitclone.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/src/klib-populate-stamp/Debug/klib-populate-download
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\FD0344D6ED9E7714889181AF59B7BBF0\KLIB-POPULATE-UPDATE.RULE
+setlocal
+cd C:\Users\kimaspc\me\haze\b\_deps\klib-src
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -Dcan_fetch=YES -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/tmp/klib-populate-gitupdate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\FD0344D6ED9E7714889181AF59B7BBF0\KLIB-POPULATE-PATCH.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/src/klib-populate-stamp/Debug/klib-populate-patch
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\FD0344D6ED9E7714889181AF59B7BBF0\KLIB-POPULATE-CONFIGURE.RULE
+setlocal
+cd C:\Users\kimaspc\me\haze\b\_deps\klib-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/src/klib-populate-stamp/Debug/klib-populate-configure
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\FD0344D6ED9E7714889181AF59B7BBF0\KLIB-POPULATE-BUILD.RULE
+setlocal
+cd C:\Users\kimaspc\me\haze\b\_deps\klib-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/src/klib-populate-stamp/Debug/klib-populate-build
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\FD0344D6ED9E7714889181AF59B7BBF0\KLIB-POPULATE-INSTALL.RULE
+setlocal
+cd C:\Users\kimaspc\me\haze\b\_deps\klib-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/src/klib-populate-stamp/Debug/klib-populate-install
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\FD0344D6ED9E7714889181AF59B7BBF0\KLIB-POPULATE-TEST.RULE
+setlocal
+cd C:\Users\kimaspc\me\haze\b\_deps\klib-build
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/src/klib-populate-stamp/Debug/klib-populate-test
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\441D3016F2DF206A0B2F2658826891D7\KLIB-POPULATE-COMPLETE.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/CMakeFiles/Debug
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/CMakeFiles/Debug/klib-populate-complete
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/klib-populate-prefix/src/klib-populate-stamp/Debug/klib-populate-done
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKEFILES\3A49CA69BEBC34B27FBE58537F2311FC\KLIB-POPULATE.RULE
+setlocal
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\KIMASPC\ME\HAZE\B\_DEPS\KLIB-SUBBUILD\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/kimaspc/me/haze/b/_deps/klib-subbuild -BC:/Users/kimaspc/me/haze/b/_deps/klib-subbuild --check-stamp-file C:/Users/kimaspc/me/haze/b/_deps/klib-subbuild/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

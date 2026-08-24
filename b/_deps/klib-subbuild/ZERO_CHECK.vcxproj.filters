@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\kimaspc\me\haze\b\_deps\klib-subbuild\CMakeFiles\3a49ca69bebc34b27fbe58537f2311fc\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{8C419BBA-F1FD-3EA7-8FE0-D9E1BEC4F1E3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
