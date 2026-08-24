@@ -2,20 +2,20 @@
 #define HAZESAMPLE_DEC
 
 #include "miniaudio.h"
-#include <klib/kbuffer.h>
-#include <klib/ktime.h>
+#include <glib.h>
+#include <stdbool.h>
 
 typedef struct {
-  ma_sound handle;
-  ma_decoder decoder;
-  KBuffer *buf;
+    ma_sound handle;
+    ma_decoder decoder;
+    GBytes *buf;
 } HazeSample;
 
-bool HazeSampleInit(HazeSample* s, KBuffer* b);
-bool HazeSampleSeek(HazeSample* s, KTime* t);
-bool HazeSampleSetVolume(HazeSample* s, float v);
-bool HazeSamplePlay(HazeSample* s);
-bool HazeSampleStop(HazeSample* s);
-void HazeSampleFree(HazeSample* s);
+bool HazeSampleInit(HazeSample *s, GBytes *buf);
+bool HazeSampleSeek(HazeSample *s, gdouble seconds);
+bool HazeSampleSetVolume(HazeSample *s, float v);
+bool HazeSamplePlay(HazeSample *s);
+bool HazeSampleStop(HazeSample *s);
+void HazeSampleFree(HazeSample *s);
 
 #endif

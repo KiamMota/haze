@@ -1,26 +1,32 @@
 #include "HazeMixer.h"
 #include "HazeChannel.h"
-#include <klib/klinklist.h>
-#include <klib/klist.h>
-#include <klib/kmalloc.h>
 
-HazeMixer* HazeMixerNew(void) {
-  HazeMixer* hz = KMALLOC(HazeMixer);
-  hz->Channels = klist_new();
-  return hz;
-} 
+HazeMixer *HazeMixerNew(void)
+{
+    HazeMixer *m = g_new0(HazeMixer, 1);
 
-void HazeMixerFree(HazeMixer **m) {
+    if (!m)
+        return NULL;
+
+    m->channels = g_ptr_array_new();
+
+    return m;
+}
+
+void HazeMixerFree(HazeMixer **m)
+{
     if (!m || !*m)
         return;
 
-    for (usize i = 0; i < klist_len((*m)->Channels); i++) {
-        HazeChannel *ch = klist_get((*m)->Channels, i);
-        HazeChannelFree(&ch);
+    for (guint i = 0; i < (*m)->channels->len; i++) {
+        HazeChannel *channel =
+            g_ptr_array_index((*m)->channels, i);
+
+        HazeChannelFree(&channel);
     }
 
-    klist_free(&(*m)->Channels);
-    KFREE(*m);
+    g_ptr_array_unref((*m)->channels);
+
+    g_free(*m);
     *m = NULL;
 }
-

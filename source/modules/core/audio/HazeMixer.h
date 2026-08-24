@@ -1,13 +1,13 @@
 #ifndef HAZEMIXER_DEC
 #define HAZEMIXER_DEC
 
-#include <stddef.h>
-#include <klib/klist.h>
+#include <glib.h>
+
 typedef struct {
-  KList* Channels;
+    GPtrArray *channels;
 } HazeMixer;
 
-HazeMixer* HazeMixerNew(void);
-void HazeMixerFree(HazeMixer** h);
+HazeMixer *HazeMixerNew(void);
+void HazeMixerFree(HazeMixer **m);
 
 #endif

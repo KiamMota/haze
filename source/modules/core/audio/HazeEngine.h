@@ -1,9 +1,8 @@
 #ifndef HAZEENGINE_DEC
 #define HAZEENGINE_DEC
 
-#include "HazeMixer.h"
 #include "miniaudio.h"
-#include <klib/ktypes.h>
+#include <stdbool.h>
 typedef ma_engine HazeAudioEngine;
 
 extern HazeAudioEngine Engine;
