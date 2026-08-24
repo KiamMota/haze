@@ -1,5 +1,6 @@
 #include "HazeServer.h"
 #include "modules/HazeLog.h"
+#include "server/HazeServerMessage.h"
 #include "server/HazeServerMiddleware.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +42,10 @@ void haze_send(uv_stream_t *stream, const void *data, size_t len)
     if (!req) return;
 
     uv_buf_t buf = uv_buf_init((char *)data, (unsigned int)len);
+
+    HazeServerResponse* res = HazeServerResponseNew();
+    
+
     uv_write(req, stream, &buf, 1, haze_on_write_done);
 }
 
