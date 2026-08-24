@@ -33,6 +33,7 @@ add_executable(haze
 target_include_directories(haze PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/modules
+    ${CMAKE_CURRENT_SOURCE_DIR}/third_party 
 )
 
 # Links
