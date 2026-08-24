@@ -1,13 +1,13 @@
 #ifndef HAZEMIXER_DEC
 #define HAZEMIXER_DEC
-
-#include <glib.h>
+#include <stddef.h>
 
 typedef struct {
-    GPtrArray *channels;
+    void   **channels;
+    size_t   count;
+    size_t   capacity;
 } HazeMixer;
 
 HazeMixer *HazeMixerNew(void);
-void HazeMixerFree(HazeMixer **m);
-
+void       HazeMixerFree(HazeMixer **m);
 #endif

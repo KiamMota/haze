@@ -1,32 +1,26 @@
 #include "HazeMixer.h"
 #include "HazeChannel.h"
+#include <stdlib.h>
 
 HazeMixer *HazeMixerNew(void)
 {
-    HazeMixer *m = g_new0(HazeMixer, 1);
-
-    if (!m)
-        return NULL;
-
-    m->channels = g_ptr_array_new();
-
+    HazeMixer *m = calloc(1, sizeof(HazeMixer));
+    if (!m) return NULL;
+    m->capacity = 8;
+    m->count    = 0;
+    m->channels = calloc(m->capacity, sizeof(void *));
+    if (!m->channels) { free(m); return NULL; }
     return m;
 }
 
 void HazeMixerFree(HazeMixer **m)
 {
-    if (!m || !*m)
-        return;
-
-    for (guint i = 0; i < (*m)->channels->len; i++) {
-        HazeChannel *channel =
-            g_ptr_array_index((*m)->channels, i);
-
-        HazeChannelFree(&channel);
+    if (!m || !*m) return;
+    for (size_t i = 0; i < (*m)->count; i++) {
+        HazeChannel *ch = (*m)->channels[i];
+        HazeChannelFree(&ch);
     }
-
-    g_ptr_array_unref((*m)->channels);
-
-    g_free(*m);
+    free((*m)->channels);
+    free(*m);
     *m = NULL;
 }

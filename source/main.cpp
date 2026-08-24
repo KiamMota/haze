@@ -1,45 +1,54 @@
-#include "modules/core/audio/HazeEngine.h"
-#include "modules/core/audio/HazeSample.h"
-#include "modules/Log.h"
+#include "modules/HazeLog.h"
+#include "modules/core/server/HazeServer.h"
 #include <cstdio>
 #include <cstring>
-
-typedef enum {
-  PLAY,
-  
-} CliCommand;
+#include <string.h>
 
 typedef struct {
   bool headless;
-  bool have_command;
-  CliCommand cmd;
 } CliArgs;
 
-CliArgs ParseArgs(int argc, char** argv) {
+CliArgs ParseArgs(int argc, char **argv) {
   CliArgs args;
 
   if (argc == 1) {
     args.headless = false;
   }
-  if (argc >= 3) {
-    args.have_command = true;
-  }
-  for (int i = 0; i<argc; i++) {
-    if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--headless") == 0) {
+  for (int i = 0; i < argc; i++) {
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--headless") == 0) {
       args.headless = true;
     } 
-    if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--play")) {
-
-    }
   }
   return args;
 }
 
-int main(int argc, char** argv) {
-  CliArgs args = ParseArgs(argc, argv);
-  if (args.headless) {
-    printf("starting headlles");
-    return 0;
+int HeadlessMode(CliArgs args) {
+  if (!args.headless)
+    return 1;
+  HazeLogInfo("Starting headless Haze...");
+  HazeLogInfo("Starting Haze Server...");
+  HazeServer *mainServer = HazeServerNew(NULL, 7192);
+
+  if (mainServer) {
+    HazeLogInfo("Haze Server started on %s:%d", HazeServerAddress(mainServer),
+                HazeServerPort(mainServer));
+    int err = HazeServerStart(mainServer);
+    if (err != 0) {
+      HazeLogError("Failed to start server: %s", uv_strerror(err));
+      return 1;
+    }
+    HazeServerRun(mainServer); // bloqueia aqui
   }
+  HazeLogInfo("Server process terminated.");
+
+  return 0;
+}
+
+int main(int argc, char **argv) {
+  CliArgs args = ParseArgs(argc, argv);
+  if (args.headless){
+    return HeadlessMode(args);
+  }
+
   return 0;
 }
