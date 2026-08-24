@@ -6,13 +6,18 @@
 typedef struct {
     HazeServerRPCType type;
     uint32_t msgid;
-    void* error;
-    void* result;
+
+    void *error;
+    size_t error_len;
+
+    void *result;
+    size_t result_len;
 } HazeServerResponse;
 
 HazeServerResponse* HazeServerResponseNew(void);
-void HazeServerResponseSetError(HazeServerResponse* s, const char* err);
-void HazeServerResponseSetMsgId(HazeServerResponse* s, uint32_t msgid);
-void HazeServerResponseSetResult(HazeServerResponse* s, void* data, unsigned int len);
-void HazeServerResponseFree(HazeServerResponse** response);
+void* HazeServerReponseMarshal(HazeServerResponse* s);
+bool HazeServerResponseFree(HazeServerResponse** response);
+bool HazeServerResponseSetError(HazeServerResponse* s, HazeServerRPCError *err);
+bool HazeServerResponseSetMsgId(HazeServerResponse* s, uint32_t msgid);
+bool HazeServerResponseSetResult(HazeServerResponse* s, void* data, unsigned int len);
 #endif

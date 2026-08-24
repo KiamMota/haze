@@ -1,41 +1,93 @@
 #include "HazeServerResponse.h"
+#include "mpack/mpack.h"
+
+#include "server/HazeServerMRPC.h"
 #include <stdlib.h>
 
-HazeServerResponse* HazeServerResponseNew(void)
-{
-    HazeServerResponse* response = calloc(1, sizeof(HazeServerResponse));
+HazeServerResponse *HazeServerResponseNew(void) {
+  HazeServerResponse *response = calloc(1, sizeof(HazeServerResponse));
 
-    if (!response)
-        return NULL;
+  if (!response)
+    return NULL;
 
-    response->type = HAZE_RPC_RESPONSE;
-    response->msgid = 0;
-    response->error = NULL;
-    response->result = NULL;
+  response->type = HAZE_RPC_RESPONSE;
+  response->msgid = 0;
+  response->error = NULL;
+  response->result = NULL;
 
-    return response;
+  return response;
 }
 
-void HazeServerResponseFree(HazeServerResponse** response)
-{
-    if (!response || !*response)
-        return;
-
-    free(*response);
-    *response = NULL;
-}
-
-HazeServerRequest* HazeServerRequestNew(void)
-{
-    HazeServerRequest* request = calloc(1, sizeof(HazeServerRequest));
-
-    if (!request)
+void *HazeServerResponseMarshal(
+    HazeServerResponse *s,
+    size_t *len
+) {
+    if (!s || !len)
         return NULL;
 
-    request->type = HAZE_RPC_REQUEST;
-    request->msgid = 0;
-    request->method = NULL;
-    request->parameters = NULL;
+    *len = 0;
 
-    return request;
+    char *buffer = NULL;
+    size_t size = 0;
+
+    mpack_writer_t writer;
+    mpack_writer_init_growable(&writer, &buffer, &size);
+
+    mpack_start_array(&writer, 4);
+
+    mpack_write_u8(&writer, HAZE_RPC_RESPONSE);
+    mpack_write_u32(&writer, s->msgid);
+
+    if (s->error && s->error_len > 0) {
+        mpack_write_bytes(
+            &writer,
+            s->error,
+            s->error_len
+        );
+    } else {
+        mpack_write_nil(&writer);
+    }
+
+    if (s->result && s->result_len > 0) {
+        mpack_write_bytes(
+            &writer,
+            s->result,
+            s->result_len
+        );
+    } else {
+        mpack_write_nil(&writer);
+    }
+
+    mpack_finish_array(&writer);
+
+    if (mpack_writer_destroy(&writer) != mpack_ok) {
+        free(buffer);
+        return NULL;
+    }
+
+    *len = size;
+    return buffer;
+}
+
+bool HazeServerResponseFree(HazeServerResponse **response) {
+  if (!response || !*response)
+    return false;
+
+  free(*response);
+  *response = NULL;
+  return true;
+}
+
+bool HazeServerResponseSetError(HazeServerResponse *s, HazeServerRPCError *err) {
+  if (!s) return false;
+  s->error = err;
+  return true;
+}
+
+bool HazeServerResponseSetMsgId(HazeServerResponse *s, uint32_t msgid) {
+  if (!s)
+    return false;
+  s->msgid = msgid;
+  return true;
+  
 }
