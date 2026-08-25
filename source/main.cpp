@@ -1,4 +1,5 @@
 #include "modules/HazeLog.h"
+#include "modules/HazeVersion.h"
 #include "modules/core/server/HazeServer.h"
 #include <cstdio>
 #include <cstring>
@@ -8,6 +9,25 @@ typedef struct {
   bool headless;
 } CliArgs;
 
+void HelpMessage(void) {
+    fputs(
+        "Usage: haze [options]\n"
+        "\n"
+        "Options:\n"
+        "  --headless    Start Haze in headless mode (server only)\n"
+        "  -h, --help    Show this message\n"
+        "\n"
+        "Examples:\n"
+        "  haze --headless\n",
+        stdout
+    );
+}
+
+void VersionMessage(void) {
+  fprintf(stdout, "haze %s\n", HAZE_VERSION_STR);
+  return;
+
+}
 CliArgs ParseArgs(int argc, char **argv) {
   CliArgs args;
 
@@ -15,7 +35,15 @@ CliArgs ParseArgs(int argc, char **argv) {
     args.headless = false;
   }
   for (int i = 0; i < argc; i++) {
-    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--headless") == 0) {
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      HelpMessage();
+      break;
+    }
+    if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
+      VersionMessage();
+      break;
+    }
+    if (strcmp(argv[i], "--headless") == 0) {
       args.headless = true;
     } 
   }

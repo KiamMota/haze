@@ -1,11 +1,11 @@
 #include "HazeServer.h"
 #include "modules/HazeLog.h"
-#include "server/HazeServerMessage.h"
 #include "server/HazeServerMiddleware.h"
+#include "server/HazeServerResponse.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <uv.h>
+#include <stddef.h>
 
 /* ---------------------------------------------------------- */
 /* Conexão individual                                          */
@@ -29,24 +29,22 @@ static void haze_on_alloc(uv_handle_t *handle, size_t suggested,
   buf->base = malloc(suggested);
   buf->len = buf->base ? (unsigned int)suggested : 0;
 }
-static void haze_on_write_done(uv_write_t *req, int status)
-{
-    if (status < 0)
-        HazeLogWarn("Write error: %s", uv_strerror(status));
-    free(req);
+static void haze_on_write_done(uv_write_t *req, int status) {
+  if (status < 0)
+    HazeLogWarn("Write error: %s", uv_strerror(status));
+  free(req);
 }
 
-void haze_send(uv_stream_t *stream, const void *data, size_t len)
-{
-    uv_write_t *req = malloc(sizeof(uv_write_t));
-    if (!req) return;
+void haze_send(uv_stream_t *stream, const void *data, size_t len) {
+  uv_write_t *req = malloc(sizeof(uv_write_t));
+  if (!req)
+    return;
 
-    uv_buf_t buf = uv_buf_init((char *)data, (unsigned int)len);
+  uv_buf_t buf = uv_buf_init((char *)data, (unsigned int)len);
 
-    HazeServerResponse* res = HazeServerResponseNew();
-    
+  HazeServerResponse *res = HazeServerResponseNew();
 
-    uv_write(req, stream, &buf, 1, haze_on_write_done);
+  uv_write(req, stream, &buf, 1, haze_on_write_done);
 }
 
 static void haze_on_read(uv_stream_t *stream, ssize_t nread,
@@ -63,10 +61,10 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
   }
 
   if (HazeServerMiddlewareIsHttp(buf->base, nread) == HAZE_MW_REJECT) {
-    HazeLogDebug("Received HTTP, rejected.");
+    HazeLogDebug("%s", "Received HTTP, rejected.");
     goto close;
   }
-  haze_send(stream, buf->base, nread); 
+  haze_send(stream, buf->base, nread);
 
   free(buf->base);
   return;
@@ -75,8 +73,6 @@ close:
   free(buf->base);
   uv_close((uv_handle_t *)stream, haze_on_close);
 }
-
-
 
 static void haze_on_connect(uv_stream_t *server, int status) {
   if (status < 0) {

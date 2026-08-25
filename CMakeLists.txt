@@ -25,8 +25,8 @@ set(HAZE_THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 # ============================================================
 # Dependências
 # ============================================================
-
-find_package(libuv CONFIG REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBUV REQUIRED libuv)
 
 # ============================================================
 # Helper
@@ -62,15 +62,16 @@ if(NOT HAZE_CORE_SOURCES)
 endif()
 
 add_library(haze_core STATIC ${HAZE_CORE_SOURCES})
-
 target_include_directories(haze_core PUBLIC
     "${HAZE_CORE_DIR}"
     "${HAZE_SOURCE_DIR}"
+    ${LIBUV_INCLUDE_DIRS}
 )
 
 target_link_libraries(haze_core PUBLIC
-    $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>
+    ${LIBUV_LIBRARIES}
 )
+target_compile_definitions(haze_core PRIVATE _XOPEN_SOURCE=700)
 
 if(TARGET haze_third_party)
     target_link_libraries(haze_core PUBLIC haze_third_party)

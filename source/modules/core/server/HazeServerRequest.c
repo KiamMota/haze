@@ -114,8 +114,8 @@ HazeServerRequest *HazeServerRequestUnmarshal(
      * especificamente um array.
      */
 
-    if (mpack_tag_type(params_tag) != mpack_type_array)
-        goto fail;
+    if (mpack_tag_type(&params_tag) != mpack_type_array)
+      goto fail;
 
     /*
      * Neste ponto, os parâmetros ainda pertencem ao

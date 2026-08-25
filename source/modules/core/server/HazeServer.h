@@ -1,5 +1,6 @@
 #ifndef SERVER_DEC
 #define SERVER_DEC
+
 #include "modules/HazeMacros.h"
 #include <uv.h>
 #include <stdint.h>
