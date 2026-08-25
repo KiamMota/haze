@@ -20,5 +20,5 @@ void* HazeServerResponseMarshal(HazeServerResponse* s, size_t* buf_len);
 bool HazeServerResponseFree(HazeServerResponse** response);
 bool HazeServerResponseSetError(HazeServerResponse* s, HazeServerRPCError err);
 bool HazeServerResponseSetMsgId(HazeServerResponse* s, uint32_t msgid);
-bool HazeServerResponseSetResult(HazeServerResponse* s, void* data, unsigned int len);
+bool HazeServerResponseSetResult(HazeServerResponse* s, void* data, size_t len);
 #endif

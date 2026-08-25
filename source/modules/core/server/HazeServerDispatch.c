@@ -18,7 +18,7 @@ static const HazeRpcEntry haze_rpc_table[] = {
 HazeRpcHandler HazeServerDispatchLookup(const char *method)
 {
     if (!method) return NULL;
-    for (int i = 0; haze_rpc_table[i].method; i++) {
+    for (int i = 0; haze_rpc_table[i].method; i++) { 
         if (strcmp(haze_rpc_table[i].method, method) == 0)
             return haze_rpc_table[i].handler;
     }

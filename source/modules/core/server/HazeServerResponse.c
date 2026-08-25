@@ -17,6 +17,12 @@ HazeServerResponse *HazeServerResponseNew(void) {
 
   return response;
 }
+bool HazeServerResponseSetResult(HazeServerResponse *s, void *data, size_t len) {
+    if (!s) return false;
+    s->result = data;
+    s->result_len = len;
+    return true;
+}
 
 void *HazeServerResponseMarshal(
     HazeServerResponse *s,
