@@ -20,12 +20,12 @@ HazeServerResponse *HazeServerResponseNew(void) {
 
 void *HazeServerResponseMarshal(
     HazeServerResponse *s,
-    size_t *len
+    size_t *out_len
 ) {
-    if (!s || !len)
+    if (!s || !out_len)
         return NULL;
 
-    *len = 0;
+    *out_len = 0;
 
     char *buffer = NULL;
     size_t size = 0;
@@ -65,7 +65,7 @@ void *HazeServerResponseMarshal(
         return NULL;
     }
 
-    *len = size;
+    *out_len = size;
     return buffer;
 }
 
@@ -78,10 +78,10 @@ bool HazeServerResponseFree(HazeServerResponse **response) {
   return true;
 }
 
-bool HazeServerResponseSetError(HazeServerResponse *s, HazeServerRPCError *err) {
-  if (!s) return false;
-  s->error = err;
-  return true;
+bool HazeServerResponseSetError(HazeServerResponse *s, HazeServerRPCError err) {
+    if (!s) return false;
+    s->error = (void *)(uintptr_t)err;
+    return true;
 }
 
 bool HazeServerResponseSetMsgId(HazeServerResponse *s, uint32_t msgid) {

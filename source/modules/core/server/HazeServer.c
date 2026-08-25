@@ -1,11 +1,13 @@
 #include "HazeServer.h"
 #include "modules/HazeLog.h"
+#include "server/HazeServerDispatch.h"
 #include "server/HazeServerMiddleware.h"
+#include "server/HazeServerRequest.h"
 #include "server/HazeServerResponse.h"
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stddef.h>
 
 /* ---------------------------------------------------------- */
 /* Conexão individual                                          */
@@ -64,7 +66,15 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     HazeLogDebug("%s", "Received HTTP, rejected.");
     goto close;
   }
-  haze_send(stream, buf->base, nread);
+
+  size_t buff_len = 0;
+  void *buff_req = HazeServerDispatch(buf->base, nread, &buff_len);
+
+  haze_send(stream, buff_req, buff_len);
+  if (buff_req) {
+    haze_send(stream, buff_req, buff_len);
+    free(buff_req);
+  }
 
   free(buf->base);
   return;
@@ -76,7 +86,7 @@ close:
 
 static void haze_on_connect(uv_stream_t *server, int status) {
   if (status < 0) {
-    fprintf(stderr, "[haze] connect error: %s\n", uv_strerror(status));
+    HazeLogError("[haze] connect error: %s\n", uv_strerror(status));
     fflush(stdout);
     return;
   }

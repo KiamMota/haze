@@ -2,6 +2,7 @@
 #define HAZE_SERVER_RESPONSE_H
 
 #include "HazeServerMRPC.h"
+#include <stddef.h>
 
 typedef struct {
     HazeServerRPCType type;
@@ -15,9 +16,9 @@ typedef struct {
 } HazeServerResponse;
 
 HazeServerResponse* HazeServerResponseNew(void);
-void* HazeServerReponseMarshal(HazeServerResponse* s);
+void* HazeServerResponseMarshal(HazeServerResponse* s, size_t* buf_len);
 bool HazeServerResponseFree(HazeServerResponse** response);
-bool HazeServerResponseSetError(HazeServerResponse* s, HazeServerRPCError *err);
+bool HazeServerResponseSetError(HazeServerResponse* s, HazeServerRPCError err);
 bool HazeServerResponseSetMsgId(HazeServerResponse* s, uint32_t msgid);
 bool HazeServerResponseSetResult(HazeServerResponse* s, void* data, unsigned int len);
 #endif
