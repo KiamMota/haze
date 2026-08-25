@@ -12,30 +12,30 @@
 #include <conio.h>
 #include <windows.h>
 #define SLEEP_MS(ms) Sleep(ms)
-static void term_raw(void)    {}
+static void term_raw(void) {}
 static void term_restore(void) {}
-static int  term_getkey(void) { return _kbhit() ? _getch() : -1; }
+static int term_getkey(void) { return _kbhit() ? _getch() : -1; }
 #else
-#include <termios.h>
 #include <fcntl.h>
+#include <termios.h>
 #include <unistd.h>
 #define SLEEP_MS(ms) usleep((ms) * 1000)
 static struct termios term_orig;
 static void term_raw(void) {
-    struct termios raw;
-    tcgetattr(STDIN_FILENO, &term_orig);
-    raw = term_orig;
-    raw.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &raw);
-    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+  struct termios raw;
+  tcgetattr(STDIN_FILENO, &term_orig);
+  raw = term_orig;
+  raw.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+  fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 }
 static void term_restore(void) {
-    fcntl(STDIN_FILENO, F_SETFL, 0);
-    tcsetattr(STDIN_FILENO, TCSANOW, &term_orig);
+  fcntl(STDIN_FILENO, F_SETFL, 0);
+  tcsetattr(STDIN_FILENO, TCSANOW, &term_orig);
 }
 static int term_getkey(void) {
-    char c;
-    return read(STDIN_FILENO, &c, 1) == 1 ? c : -1;
+  char c;
+  return read(STDIN_FILENO, &c, 1) == 1 ? c : -1;
 }
 #endif
 
@@ -44,8 +44,7 @@ typedef struct {
 } CliArgs;
 
 void HelpMessage(void) {
-    fputs(
-        "Usage: haze [options]\n"
+  fputs("Usage: haze [options]\n"
         "\n"
         "Options:\n"
         "  --headless    Start Haze in headless mode (server only)\n"
@@ -53,8 +52,7 @@ void HelpMessage(void) {
         "\n"
         "Examples:\n"
         "  haze --headless\n",
-        stdout
-    );
+        stdout);
 }
 
 void VersionMessage(void) {
@@ -62,57 +60,78 @@ void VersionMessage(void) {
   return;
 }
 
-
 void PlayMusic(const char *music_path) {
-    HazeSample s = {};
-    if (!HazeSampleInitFromFile(&s, music_path)) {
-        printf("fatal: could not play '%s'\n", music_path);
-        return;
+  HazeSample s = {};
+  if (!HazeSampleInitFromFile(&s, music_path)) {
+    printf("fatal: could not play '%s'\n", music_path);
+    return;
+  }
+  printf("Now playing: %s\n", HazeSampleGetName(&s));
+  printf("Duration: %f\n", HazeSampleGetDuration(&s));
+  printf("Sample Rate: %f\n", HazeSampleGetSampleRate(&s));
+
+  HazeSamplePlay(&s);
+  term_raw();
+
+  bool playing = true;
+  bool running = true;
+
+  while (running) {
+    float current = HazeSampleGetCursor(&s);
+    float total = HazeSampleGetDuration(&s);
+    float volume = HazeSampleGetVolume(&s);
+    int bar_width = 30;
+    int filled = total > 0 ? (int)(current / total * bar_width) : 0;
+
+    printf("\033[2K\r");
+    printf("  %s  \033[90m[\033[0m",
+           playing ? "\033[32m▶\033[0m" : "\033[33m⏸\033[0m");
+    for (int i = 0; i < bar_width; i++)
+      printf(i < filled ? "\033[32m=\033[0m" : "\033[90m-\033[0m");
+    printf("\033[90m]\033[0m");
+    printf("  \033[36m%d:%02d\033[0m / \033[90m%d:%02d\033[0m",
+           (int)current / 60, (int)current % 60, (int)total / 60,
+           (int)total % 60);
+    printf("  \033[90mspace=pause  q=quit\033[0m");
+    fflush(stdout);
+
+    int k = term_getkey();
+    switch (k) {
+    case ' ':
+      playing = !playing;
+      playing ? HazeSamplePlay(&s) : HazeSampleStop(&s);
+      break;
+    case 'q':
+      running = false;
+      break;
+    case '+': {
+      float volume = HazeSampleGetVolume(&s) + 0.1f;
+      if (volume > 1.0f)
+        volume = 1.0f;
+
+      HazeSampleSetVolume(&s, volume);
+      break;
     }
-    printf("Now playing: %s\n", HazeSampleGetName(&s));
-    printf("Duration: %f\n", HazeSampleGetDuration(&s));
-    printf("Sample Rate: %f\n", HazeSampleGetSampleRate(&s));
 
-    HazeSamplePlay(&s);
-    term_raw();
+    case '-': {
+      float volume = HazeSampleGetVolume(&s) - 0.1f;
+      if (volume < 0.0f)
+        volume = 0.0f;
 
-    bool playing = true;
-    bool running = true;
-
-    while (running) {
-        float current  = HazeSampleGetCursor(&s);
-        float total    = HazeSampleGetDuration(&s);
-        int bar_width  = 30;
-        int filled     = total > 0 ? (int)(current / total * bar_width) : 0;
-
-        printf("\033[2K\r");
-        printf("  %s  \033[90m[\033[0m", playing ? "\033[32m▶\033[0m" : "\033[33m⏸\033[0m");
-        for (int i = 0; i < bar_width; i++)
-            printf(i < filled ? "\033[32m=\033[0m" : "\033[90m-\033[0m");
-        printf("\033[90m]\033[0m");
-        printf("  \033[36m%d:%02d\033[0m / \033[90m%d:%02d\033[0m",
-            (int)current / 60, (int)current % 60,
-            (int)total   / 60, (int)total   % 60);
-        printf("  \033[90mspace=pause  q=quit\033[0m");
-        fflush(stdout);
-
-        int k = term_getkey();
-        if (k == ' ') {
-            playing = !playing;
-            playing ? HazeSamplePlay(&s) : HazeSampleStop(&s);
-        } else if (k == 'q') {
-            running = false;
-        }
-
-        if (!HazeSampleIsPlaying(&s) && playing)
-            running = false;
-
-        SLEEP_MS(100);
+      HazeSampleSetVolume(&s, volume);
+      break;
+    }
     }
 
-    printf("\n");
-    term_restore();
-    HazeSampleFree(&s);
+    if (!HazeSampleIsPlaying(&s) && playing)
+      running = false;
+
+    SLEEP_MS(50);
+  }
+
+  printf("\n");
+  term_restore();
+  HazeSampleFree(&s);
 }
 
 CliArgs ParseArgs(int argc, char **argv) {
@@ -132,14 +151,14 @@ CliArgs ParseArgs(int argc, char **argv) {
     }
     if (strcmp(argv[i], "--headless") == 0) {
       args.headless = true;
-    } 
-    if (strcmp(argv[i], "play") == 0 ) {
+    }
+    if (strcmp(argv[i], "play") == 0) {
       if (!argv[i + 1]) {
         printf("fatal: what song?\n");
         printf("use: haze play <song_path>\n");
         break;
       }
-      char* music_path = argv[i + 1];
+      char *music_path = argv[i + 1];
       PlayMusic(music_path);
       break;
     }
@@ -173,7 +192,7 @@ int main(int argc, char **argv) {
 
   HazeEngineInit();
   CliArgs args = ParseArgs(argc, argv);
-  if (args.headless){
+  if (args.headless) {
     return HeadlessMode(args);
   }
 

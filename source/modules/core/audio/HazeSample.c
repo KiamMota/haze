@@ -76,14 +76,19 @@ bool HazeSampleSeek(HazeSample *s, double seconds) {
 }
 
 bool HazeSampleSetVolume(HazeSample *s, float v) {
-  if (!s)
-    return false;
-  if (v < 0.0f)
-    v = 0.0f;
-  if (v > 1.0f)
-    v = 1.0f;
-  ma_sound_set_volume(&s->handle, v);
-  return true;
+    if (!s)
+        return false;
+
+    if (v < 0.0f)
+        v = 0.0f;
+
+    if (v > 1.0f)
+        v = 1.0f;
+
+    s->volume = v;
+    ma_sound_set_volume(&s->handle, v);
+
+    return true;
 }
 
 bool HazeSamplePlay(HazeSample *s) {
