@@ -1,4 +1,6 @@
 # Haze - A new concept for DAWs.
+
+![Haze](assets/ico.png)
 Haze is a DAW (Digital Audio Workstation) focused on extreme cross-platform flexibility—and it is completely free!
 
 ## Archtecture
