@@ -2,7 +2,7 @@
 #define HAZEENGINE_DEC
 
 #include "miniaudio.h"
-#include "modules/HazeMacros.h"
+#include "HazeMacros.h"
 #include <stdbool.h>
 EXPORT_CPP_BEGIN
 typedef ma_engine HazeAudioEngine;

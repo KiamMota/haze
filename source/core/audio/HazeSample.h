@@ -1,7 +1,7 @@
 #ifndef HAZESAMPLE_DEC
 #define HAZESAMPLE_DEC
 #include "miniaudio.h"
-#include "modules/HazeMacros.h"
+#include "HazeMacros.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

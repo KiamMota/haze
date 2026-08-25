@@ -1,10 +1,8 @@
-#include "audio/HazeEngine.h"
-#include "audio/HazeSample.h"
-#include "modules/HazeLog.h"
-#include "modules/HazeVersion.h"
-#include "modules/core/server/HazeServer.h"
-#include <cstdio>
-#include <cstring>
+#include "core/audio/HazeEngine.h"
+#include "core/audio/HazeSample.h"
+#include "HazeLog.h"
+#include "HazeVersion.h"
+#include "core/server/HazeServer.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -39,25 +37,36 @@ static int term_getkey(void) {
 }
 #endif
 
+typedef enum {
+  MODE_HEADLESS,
+  MODE_PLAY,
+  MODE_HELP,
+  MODE_VERSION
+} ExecutionMode;
+
 typedef struct {
-  bool headless;
+  ExecutionMode mode;
+  const char *music_path;
 } CliArgs;
 
 void HelpMessage(void) {
-  fputs("Usage: haze [options]\n"
+  fputs("Usage: haze [command|options]\n"
+        "\n"
+        "Commands:\n"
+        "  play <file>    Play an audio file\n"
         "\n"
         "Options:\n"
-        "  --headless    Start Haze in headless mode (server only)\n"
-        "  -h, --help    Show this message\n"
+        "  -v, --version  Show version information\n"
+        "  -h, --help     Show this message\n"
         "\n"
         "Examples:\n"
-        "  haze --headless\n",
+        "  haze\n"
+        "  haze play song.mp3\n",
         stdout);
 }
 
 void VersionMessage(void) {
   fprintf(stdout, "haze %s\n", HAZE_VERSION_STR);
-  return;
 }
 
 void PlayMusic(const char *music_path) {
@@ -67,8 +76,8 @@ void PlayMusic(const char *music_path) {
     return;
   }
   printf("Now playing: %s\n", HazeSampleGetName(&s));
-  printf("Duration: %f\n", HazeSampleGetDuration(&s));
-  printf("Sample Rate: %f\n", HazeSampleGetSampleRate(&s));
+  printf("Duration: %.2f s\n", HazeSampleGetDuration(&s));
+  printf("Sample Rate: %.0f Hz\n", HazeSampleGetSampleRate(&s));
 
   HazeSamplePlay(&s);
   term_raw();
@@ -79,7 +88,6 @@ void PlayMusic(const char *music_path) {
   while (running) {
     float current = HazeSampleGetCursor(&s);
     float total = HazeSampleGetDuration(&s);
-    float volume = HazeSampleGetVolume(&s);
     int bar_width = 30;
     int filled = total > 0 ? (int)(current / total * bar_width) : 0;
 
@@ -106,18 +114,13 @@ void PlayMusic(const char *music_path) {
       break;
     case '+': {
       float volume = HazeSampleGetVolume(&s) + 0.1f;
-      if (volume > 1.0f)
-        volume = 1.0f;
-
+      if (volume > 1.0f) volume = 1.0f;
       HazeSampleSetVolume(&s, volume);
       break;
     }
-
     case '-': {
       float volume = HazeSampleGetVolume(&s) - 0.1f;
-      if (volume < 0.0f)
-        volume = 0.0f;
-
+      if (volume < 0.0f) volume = 0.0f;
       HazeSampleSetVolume(&s, volume);
       break;
     }
@@ -135,40 +138,38 @@ void PlayMusic(const char *music_path) {
 }
 
 CliArgs ParseArgs(int argc, char **argv) {
-  CliArgs args;
+  // Padrão explicitamente definido como MODE_HEADLESS
+  CliArgs args = { .mode = MODE_HEADLESS, .music_path = NULL };
 
   if (argc == 1) {
-    args.headless = false;
+    return args;
   }
-  for (int i = 0; i < argc; i++) {
+
+  for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
-      HelpMessage();
-      break;
+      args.mode = MODE_HELP;
+      return args;
     }
     if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--version") == 0) {
-      VersionMessage();
-      break;
-    }
-    if (strcmp(argv[i], "--headless") == 0) {
-      args.headless = true;
+      args.mode = MODE_VERSION;
+      return args;
     }
     if (strcmp(argv[i], "play") == 0) {
-      if (!argv[i + 1]) {
-        printf("fatal: what song?\n");
-        printf("use: haze play <song_path>\n");
-        break;
+      if (i + 1 < argc) {
+        args.mode = MODE_PLAY;
+        args.music_path = argv[i + 1];
+      } else {
+        printf("fatal: missing audio file path.\nUsage: haze play <song_path>\n");
+        args.mode = MODE_HELP;
       }
-      char *music_path = argv[i + 1];
-      PlayMusic(music_path);
-      break;
+      return args;
     }
   }
+
   return args;
 }
 
-int HeadlessMode(CliArgs args) {
-  if (!args.headless)
-    return 1;
+int HeadlessMode(void) {
   HazeLogInfo("Starting headless Haze...");
   HazeLogInfo("Starting Haze Server...");
   HazeServer *mainServer = HazeServerNew(NULL, 7192);
@@ -181,7 +182,7 @@ int HeadlessMode(CliArgs args) {
       HazeLogError("Failed to start server: %s", uv_strerror(err));
       return 1;
     }
-    HazeServerRun(mainServer); // bloqueia aqui
+    HazeServerRun(mainServer);
   }
   HazeLogInfo("Server process terminated.");
 
@@ -189,12 +190,30 @@ int HeadlessMode(CliArgs args) {
 }
 
 int main(int argc, char **argv) {
-
-  HazeEngineInit();
   CliArgs args = ParseArgs(argc, argv);
-  if (args.headless) {
-    return HeadlessMode(args);
+
+  // Comandos informativos saem direto sem tocar no audio engine
+  if (args.mode == MODE_VERSION) {
+    VersionMessage();
+    return 0;
+  }
+  if (args.mode == MODE_HELP) {
+    HelpMessage();
+    return 0;
   }
 
-  return 0;
+  // Inicializa o engine de áudio para comandos operacionais (HEADLESS ou PLAY)
+  HazeLogInfo("starting audio engine...");
+  if (!HazeEngineInit()) {
+    HazeLogError("failed to start audio engine.");
+    return 1;
+  }
+
+  if (args.mode == MODE_PLAY && args.music_path) {
+    PlayMusic(args.music_path);
+    return 0;
+  }
+
+  // Comportamento Padrão (Sem argumentos)
+  return HeadlessMode();
 }

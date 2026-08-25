@@ -1,5 +1,5 @@
 #include "HazeServer.h"
-#include "modules/HazeLog.h"
+#include "HazeLog.h"
 #include "server/HazeServerDispatch.h"
 #include "server/HazeServerMiddleware.h"
 #include "server/HazeServerRequest.h"
