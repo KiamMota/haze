@@ -2,7 +2,7 @@
 #define PROTO_RESPONSE_H
 
 #include "MessagePackRPC.h"
-#include "core/proto/RawBuffer.h"
+#include "RawBuffer.h"
 #include <stddef.h>
 
 typedef struct {

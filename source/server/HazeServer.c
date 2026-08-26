@@ -2,10 +2,10 @@
 #include "HazeLog.h"
 #include "HazeServerDispatch.h"
 #include "HazeServerMiddleware.h"
-#include "core/proto/MessagePackRPC.h"
-#include "core/proto/RawBuffer.h"
-#include "core/proto/Request.h"
-#include "core/proto/Response.h"
+#include "proto/MessagePackRPC.h"
+#include "proto/RawBuffer.h"
+#include "proto/Request.h"
+#include "proto/Response.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>

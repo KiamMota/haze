@@ -1,11 +1,11 @@
 /* HazeServerFuncDispatch.c */
 #include "HazeServerDispatch.h"
 #include "HazeLog.h"
-#include "core/functions/HazeFuncPing.h"
-#include "core/proto/MessagePackRPC.h"
-#include "core/proto/RawBuffer.h"
-#include "core/proto/Request.h"
-#include "core/proto/Response.h"
+#include "functions/HazeFuncPing.h"
+#include "proto/MessagePackRPC.h"
+#include "proto/RawBuffer.h"
+#include "proto/Request.h"
+#include "proto/Response.h"
 #include <string.h>
 
 /* ---------------------------------------------------------- */

@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 
-#include "core/proto/RawBuffer.h"
-#include "core/proto/Response.h"
+#include "proto/RawBuffer.h"
+#include "proto/Response.h"
 
 typedef struct HazeClient HazeClient;
 

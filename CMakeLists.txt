@@ -20,7 +20,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ============================================================
 
 set(HAZE_SOURCE_DIR      "${CMAKE_CURRENT_SOURCE_DIR}/source")
-set(HAZE_CORE_DIR        "${HAZE_SOURCE_DIR}/core")
 set(HAZE_THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 
 # ============================================================
@@ -80,12 +79,12 @@ endif()
 
 haze_collect_sources(
     HAZE_CORE_SOURCES
-    "${HAZE_CORE_DIR}"
+    "${HAZE_SOURCE_DIR}"
 )
 
 if(NOT HAZE_CORE_SOURCES)
     message(FATAL_ERROR
-        "No source files found in ${HAZE_CORE_DIR}"
+      "No source files found in ${HAZE_SOURCE_DIR}"
     )
 endif()
 
@@ -98,8 +97,7 @@ set_target_properties(haze_core PROPERTIES
 )
 
 target_include_directories(haze_core PUBLIC
-    "${HAZE_CORE_DIR}"
-    "${HAZE_SOURCE_DIR}"
+  "${HAZE_SOURCE_DIR}"
 )
 
 target_link_libraries(

@@ -1,6 +1,6 @@
 #include "Request.h"
 #include "HazeLog.h"
-#include "core/proto/RawBuffer.h"
+#include "proto/RawBuffer.h"
 #include "mpack/mpack.h"
 
 #include <stdlib.h>

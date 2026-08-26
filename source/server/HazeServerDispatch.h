@@ -2,9 +2,9 @@
 #ifndef HAZE_SERVER_FUNC_DISPATCH_H
 #define HAZE_SERVER_FUNC_DISPATCH_H
 
-#include "core/proto/RawBuffer.h"
-#include "core/proto/Request.h"
-#include "core/proto/Response.h"
+#include "proto/RawBuffer.h"
+#include "proto/Request.h"
+#include "proto/Response.h"
 
 typedef Response *(*HazeRpcHandler)(Request *req);
 

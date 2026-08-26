@@ -1,5 +1,6 @@
 #include "Client.h"
-#include "core/proto/Request.h"
+#include "proto/Request.h"
+#include "proto/Response.h"
 #include <uv.h>
 #include <stdlib.h>
 #include <string.h>
