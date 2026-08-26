@@ -1,4 +1,5 @@
 #include "Response.h"
+#include "HazeLog.h"
 #include "core/proto/RawBuffer.h"
 #include "mpack/mpack-reader.h"
 #include "mpack/mpack.h"
@@ -26,45 +27,66 @@ bool ResponseSetResult(Response *s, void *data, size_t len) {
   return RawBufferSetData(s->result, data, len);
 }
 
-RawBuffer *ResponseMarshal(Response *s) {
-  if (!s)
-    return NULL;
+RawBuffer *ResponseMarshal(Response *s)
+{
+    if (!s)
+        return NULL;
 
-  RawBuffer *buffer = RawBufferNew(NULL, 0);
+    char *data = NULL;
+    size_t size = 0;
 
-  char *data = RawBufferData(buffer);
-  size_t size = RawBufferLen(buffer);
+    mpack_writer_t writer;
+    mpack_writer_init_growable(&writer, &data, &size);
 
-  mpack_writer_t writer;
-  mpack_writer_init_growable(&writer, &data, &size);
+    mpack_start_array(&writer, 4);
 
-  mpack_start_array(&writer, 4);
+    mpack_write_u8(&writer, HAZE_RPC_RESPONSE);
+    mpack_write_u32(&writer, s->msgid);
 
-  mpack_write_u8(&writer, HAZE_RPC_RESPONSE);
-  mpack_write_u32(&writer, s->msgid);
+    if (s->error && RawBufferLen(s->error) > 0) {
+        mpack_write_bytes(
+            &writer,
+            RawBufferData(s->error),
+            RawBufferLen(s->error)
+        );
+    } else {
+        mpack_write_nil(&writer);
+    }
 
-  if (RawBufferLen(s->error)) {
-    mpack_write_bytes(&writer, RawBufferData(s->error), RawBufferLen(s->error));
-  } else {
-    mpack_write_nil(&writer);
-  }
+    if (s->result && RawBufferLen(s->result) > 0) {
+        mpack_write_bytes(
+            &writer,
+            RawBufferData(s->result),
+            RawBufferLen(s->result)
+        );
+    } else {
+        mpack_write_nil(&writer);
+    }
 
-  if (RawBufferLen(s->result)) {
-    mpack_write_bytes(&writer, RawBufferData(s->result),
-                      RawBufferLen(s->result));
-  } else {
-    mpack_write_nil(&writer);
-  }
+    mpack_finish_array(&writer);
 
-  mpack_finish_array(&writer);
+    mpack_error_t error = mpack_writer_destroy(&writer);
 
-  if (mpack_writer_destroy(&writer) != mpack_ok) {
-    RawBufferFree(&buffer);
-    return NULL;
-  }
-  RawBufferSetData(buffer, data, size);
+    if (error != mpack_ok) {
+        HazeLogError(
+            "ResponseMarshal failed: %s",
+            mpack_error_to_string(error)
+        );
 
-  return buffer;
+        if (data)
+            free(data);
+
+        return NULL;
+    }
+
+    RawBuffer *buffer = RawBufferNew(data, size);
+
+    free(data);
+
+    if (!buffer)
+        return NULL;
+
+    return buffer;
 }
 
 bool ResponseFree(Response **response) {

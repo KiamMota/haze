@@ -5,10 +5,23 @@
 #include <string.h>
 
 RawBuffer *RawBufferNew(void *data, size_t len) {
-  RawBuffer *rw_buffr = malloc(sizeof(RawBuffer));
-  rw_buffr->data = malloc(sizeof(len));
-  rw_buffr->len = len;
-  return rw_buffr;
+  if (!data || len == 0)
+    return NULL;
+
+  RawBuffer *buffer = malloc(sizeof(RawBuffer));
+  if (!buffer)
+    return NULL;
+
+  buffer->data = malloc(len);
+  if (!buffer->data) {
+    free(buffer);
+    return NULL;
+  }
+
+  memcpy(buffer->data, data, len);
+  buffer->len = len;
+
+  return buffer;
 }
 
 void RawBufferFree(RawBuffer **b) {
@@ -31,10 +44,11 @@ size_t RawBufferLen(RawBuffer *b) {
 }
 
 bool RawBufferSetData(RawBuffer *b, void *data, size_t len) {
-  if (!b) return false;
+  if (!b)
+    return false;
   void *new_data = realloc(b->data, len);
   if (!new_data && len > 0) {
-    return false; 
+    return false;
   }
 
   // Agora que o espaço está garantido, copiamos os bytes do dado de origem

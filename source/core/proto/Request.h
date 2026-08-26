@@ -6,35 +6,28 @@
 #include "core/proto/RawBuffer.h"
 
 #include <stdbool.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct {
-    HazeServerRPCType type;
-    uint32_t msgid;
+  HazeServerRPCType type;
+  uint32_t msgid;
 
-    char *method;
-    RawBuffer* parameters;
+  char *method;
+  RawBuffer *parameters;
 } Request;
 
-Request* RequestUnmarshal(RawBuffer* b);
+Request *RequestUnmarshal(RawBuffer *b);
+RawBuffer* RequestMarshal(Request* r);
 
 Request *HazeServerRequestNew(void);
-void HazeServerRequestSetMethod(
-    Request *request,
-    const char *method
-);
 
-bool RequestSetParameters(
-    Request *request, RawBuffer* b
-);
+void HazeServerRequestSetMethod(Request *request, const char *method);
 
-RawBuffer *RequestGetRaw(
-    Request *request
-);
+bool RequestSetParameters(Request *request, RawBuffer *b);
 
-void RequestFree(
-    Request **request
-);
+RawBuffer *RequestGetRaw(Request *request);
+
+void RequestFree(Request **request);
 
 #endif

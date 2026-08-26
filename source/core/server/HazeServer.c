@@ -2,13 +2,16 @@
 #include "HazeLog.h"
 #include "HazeServerDispatch.h"
 #include "HazeServerMiddleware.h"
+#include "core/proto/MessagePackRPC.h"
 #include "core/proto/RawBuffer.h"
 #include "core/proto/Request.h"
+#include "core/proto/Response.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <uv.h>
 
 /* ---------------------------------------------------------- */
 /* Conexão individual                                          */
@@ -21,7 +24,7 @@ typedef struct {
 typedef struct {
 
   uv_write_t req;
-    void *data_to_free;
+  void *data_to_free;
 } haze_write_req_t;
 
 static void haze_on_close(uv_handle_t *handle) {
@@ -38,38 +41,42 @@ static void haze_on_alloc(uv_handle_t *handle, size_t suggested,
   buf->len = buf->base ? (unsigned int)suggested : 0;
 }
 static void haze_on_write_done(uv_write_t *req, int status) {
-    if (status < 0) {
-        HazeLogWarn("Write error: %s", uv_strerror(status));
-    }
-    haze_write_req_t *wr = (haze_write_req_t *)req;
-    if (wr->data_to_free) {
-        free(wr->data_to_free);
-    }
-    free(wr);
+  if (status < 0) {
+    HazeLogWarn("Write error: %s", uv_strerror(status));
+  }
+  haze_write_req_t *wr = (haze_write_req_t *)req;
+  if (wr->data_to_free) {
+    free(wr->data_to_free);
+  }
+  free(wr);
 }
 
 void haze_send(uv_stream_t *stream, const void *data, size_t len) {
-    haze_write_req_t *req = malloc(sizeof(haze_write_req_t));
-    if (!req) return;
+  haze_write_req_t *req = malloc(sizeof(haze_write_req_t));
+  if (!req)
+    return;
 
-    // Duplica o buffer para garantir a validade dos dados durante o envio assíncrono
-    void *data_copy = malloc(len);
-    if (!data_copy) {
-        free(req);
-        return;
-    }
-    memcpy(data_copy, data, len);
+  // Duplica o buffer para garantir a validade dos dados durante o envio
+  // assíncrono
+  void *data_copy = malloc(len);
+  if (!data_copy) {
+    free(req);
+    return;
+  }
+  memcpy(data_copy, data, len);
 
-    req->data_to_free = data_copy;
-    uv_buf_t buf = uv_buf_init((char *)data_copy, (unsigned int)len);
+  req->data_to_free = data_copy;
+  uv_buf_t buf = uv_buf_init((char *)data_copy, (unsigned int)len);
 
-    uv_write((uv_write_t *)req, stream, &buf, 1, haze_on_write_done);
+  uv_write((uv_write_t *)req, stream, &buf, 1, haze_on_write_done);
 }
 
-static void haze_on_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+static void haze_on_read(uv_stream_t *stream, ssize_t nread,
+                         const uv_buf_t *buf) {
   if (nread < 0) {
     if (nread != UV_EOF)
       HazeLogWarn("Read error: %s", uv_strerror((int)nread));
+
     goto close;
   }
 
@@ -78,20 +85,70 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf
     return;
   }
 
-  // Despacha o buffer binário bruto contendo o MsgPack
+  HazeLogDebug("Received %zd bytes (MsgPack)", nread);
+
   RawBuffer *recv = RawBufferNew(buf->base, nread);
-  if (!recv) goto cleanup;
+  if (!recv)
+    goto cleanup;
+  HazeLogDebug("libuv first bytes: %02X %02X %02X %02X",
+               (unsigned char)buf->base[0], (unsigned char)buf->base[1],
+               (unsigned char)buf->base[2], (unsigned char)buf->base[3]);
+  /*
+   * Transport layer:
+   * RawBuffer -> Request
+   */
+  HazeLogDebug("Deserializing incoming request...");
 
-  HazeLogDebug("Recebidos %zd bytes (MsgPack)", nread);
+  Request *request = RequestUnmarshal(recv);
 
-  // O HazeServerDispatch deve usar uma biblioteca de MsgPack (como cmp ou mpack)
-  // para fazer o unpack da estrutura [0, msgid, method, params]
-  RawBuffer *response = HazeServerDispatch(recv);
+  if (!request) {
+    HazeLogWarn("Failed to deserialize incoming request");
 
-  if (response) {
-    haze_send(stream, RawBufferData(response), RawBufferLen(response));
-    RawBufferFree(&response);
+    Response *error = ResponseNew();
+    if (error) {
+      ResponseSetMsgId(error, 0);
+      ResponseSetError(error, MPACKRPC_MALFORMED_REQ);
+
+      RawBuffer *response = ResponseMarshal(error);
+
+      if (response) {
+        haze_send(stream, RawBufferData(response), RawBufferLen(response));
+
+        RawBufferFree(&response);
+      }
+
+      ResponseFree(&error);
+    }
+
+    goto cleanup;
   }
+
+  HazeLogDebug("Request deserialized: ID=%u, Method='%s'", request->msgid,
+               request->method ? request->method : "NULL");
+
+  /*
+   * Dispatcher layer:
+   * Request -> Response
+   */
+  Response *response = HazeServerDispatch(request);
+
+  if (!response) {
+    HazeLogError("Dispatcher returned NULL");
+    goto cleanup;
+  }
+
+  RawBuffer *send_buffer = ResponseMarshal(response);
+
+  if (!send_buffer) {
+    HazeLogError("Failed to serialize response");
+    ResponseFree(&response);
+    goto cleanup;
+  }
+
+  haze_send(stream, RawBufferData(send_buffer), RawBufferLen(send_buffer));
+
+  RawBufferFree(&send_buffer);
+  ResponseFree(&response);
 
 cleanup:
   RawBufferFree(&recv);
@@ -102,6 +159,7 @@ close:
   free(buf->base);
   uv_close((uv_handle_t *)stream, haze_on_close);
 }
+
 static void haze_on_connect(uv_stream_t *server, int status) {
   if (status < 0) {
     HazeLogError("[haze] connect error: %s\n", uv_strerror(status));
@@ -128,12 +186,13 @@ static void haze_on_connect(uv_stream_t *server, int status) {
 /* API pública                                                 */
 /* ---------------------------------------------------------- */
 
-HazeServer* HazeServerNew(const char *addr, uint16_t port) {
+HazeServer *HazeServerNew(const char *addr, uint16_t port) {
   HazeServer *s = calloc(1, sizeof(HazeServer));
-  if (!s) return NULL;
+  if (!s)
+    return NULL;
 
   // Cria um loop dedicado para esta instância
-  s->loop = uv_loop_new(); 
+  s->loop = uv_loop_new();
   s->port = port;
   s->addr = addr ? strdup(addr) : "127.0.0.1";
 
@@ -170,7 +229,8 @@ void HazeServerStop(HazeServer *s) {
 }
 
 void HazeServerFree(HazeServer **s_ptr) {
-  if (!s_ptr || !*s_ptr) return;
+  if (!s_ptr || !*s_ptr)
+    return;
   HazeServer *s = *s_ptr;
 
   // Fecha o loop dedicado
