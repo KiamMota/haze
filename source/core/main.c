@@ -17,7 +17,7 @@ static int term_getkey(void) { return _kbhit() ? _getch() : -1; }
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
-#define SLEEP_MS(ms) usleep((ms) * 1000)
+#define SLEEP_MS(ms) sleep((ms) * 1000)
 static struct termios term_orig;
 static void term_raw(void) {
   struct termios raw;

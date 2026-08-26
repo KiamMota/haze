@@ -1,9 +1,10 @@
 #include "HazeServer.h"
 #include "HazeLog.h"
-#include "server/HazeServerDispatch.h"
-#include "server/HazeServerMiddleware.h"
-#include "server/HazeServerRequest.h"
-#include "server/HazeServerResponse.h"
+#include "HazeServerDispatch.h"
+#include "HazeServerMiddleware.h"
+#include "core/proto/RawBuffer.h"
+#include "core/proto/Request.h"
+#include "core/proto/Response.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +45,7 @@ void haze_send(uv_stream_t *stream, const void *data, size_t len) {
 
   uv_buf_t buf = uv_buf_init((char *)data, (unsigned int)len);
 
-  HazeServerResponse *res = HazeServerResponseNew();
+  Response *res = ResponseNew();
 
   uv_write(req, stream, &buf, 1, haze_on_write_done);
 }
@@ -54,6 +55,7 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
   if (nread < 0) {
     if (nread != UV_EOF)
       HazeLogWarn("Read error: %s", uv_strerror((int)nread));
+
     goto close;
   }
 
@@ -67,15 +69,21 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     goto close;
   }
 
-  size_t buff_len = 0;
-  void *buff_req = HazeServerDispatch(buf->base, nread, &buff_len);
+  RawBuffer *recv = RawBufferNew(buf->base, nread);
 
-  haze_send(stream, buff_req, buff_len);
-  if (buff_req) {
-    haze_send(stream, buff_req, buff_len);
-    free(buff_req);
+  if (!recv)
+    goto cleanup;
+
+  RawBuffer *response = HazeServerDispatch(recv);
+
+  if (response) {
+    haze_send(stream, RawBufferData(response), RawBufferLen(response));
+
+    RawBufferFree(&response);
   }
 
+cleanup:
+  RawBufferFree(&recv);
   free(buf->base);
   return;
 

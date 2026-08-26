@@ -2,9 +2,9 @@
 #define HAZE_FUNC_PING_H
 
 
-#include "core/server/HazeServerRequest.h"
-#include "core/server/HazeServerResponse.h"
+#include "core/proto/Request.h"
+#include "core/proto/Response.h"
 
-HazeServerResponse *HazeFuncPing(HazeServerRequest *req);
+Response *HazeFuncPing(Request *req);
 
 #endif

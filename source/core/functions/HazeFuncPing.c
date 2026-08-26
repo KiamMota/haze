@@ -1,9 +1,11 @@
 #include "HazeFuncPing.h"
+#include "core/proto/Request.h"
+#include "core/proto/Response.h"
 
-HazeServerResponse *HazeFuncPing(HazeServerRequest *req)
+Response *HazeFuncPing(Request *req)
 {
-    HazeServerResponse *res = HazeServerResponseNew();
-    HazeServerResponseSetMsgId(res, req->msgid);
-    HazeServerResponseSetResult(res, "pong", 4);
+    Response *res = ResponseNew();
+    ResponseSetMsgId(res, req->msgid);
+    ResponseSetResult(res, "pong", 4);
     return res;
 }

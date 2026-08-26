@@ -2,10 +2,11 @@
 #ifndef HAZE_SERVER_FUNC_DISPATCH_H
 #define HAZE_SERVER_FUNC_DISPATCH_H
 
-#include "HazeServerRequest.h"
-#include "HazeServerResponse.h"
+#include "core/proto/RawBuffer.h"
+#include "core/proto/Request.h"
+#include "core/proto/Response.h"
 
-typedef HazeServerResponse *(*HazeRpcHandler)(HazeServerRequest *req);
+typedef Response *(*HazeRpcHandler)(Request *req);
 
 typedef struct {
     const char    *method;
@@ -13,6 +14,6 @@ typedef struct {
 } HazeRpcEntry;
 
 HazeRpcHandler HazeServerDispatchLookup(const char *method);
-void          *HazeServerDispatch(const void *data, size_t len, size_t *out_len);
+void          *HazeServerDispatch(RawBuffer *b);
 
 #endif

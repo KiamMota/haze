@@ -1,13 +1,14 @@
-#include "HazeServerRequest.h"
+#include "Request.h"
+#include "core/proto/RawBuffer.h"
 #include "mpack/mpack.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-HazeServerRequest *HazeServerRequestNew(void)
+Request *HazeServerRequestNew(void)
 {
-    HazeServerRequest *request =
-        calloc(1, sizeof(HazeServerRequest));
+    Request *request =
+        calloc(1, sizeof(Request));
 
     if (!request)
         return NULL;
@@ -16,23 +17,19 @@ HazeServerRequest *HazeServerRequestNew(void)
 
     return request;
 }
-HazeServerRequest *HazeServerRequestUnmarshal(
-    const void *data,
-    size_t len
-)
+Request *RequestUnmarshal(RawBuffer *b)
 {
-    if (!data || len == 0)
-        return NULL;
+  if (!RawBufferLen(b))  {
+    return NULL;
+  }
 
     mpack_reader_t reader;
 
     mpack_reader_init_data(
-        &reader,
-        (const char *)data,
-        len
+        &reader, RawBufferData(b), RawBufferLen(b)
     );
 
-    HazeServerRequest *request = NULL;
+    Request *request = NULL;
 
     /* [type, msgid, method, params] */
     uint32_t count = mpack_expect_array(&reader);
@@ -139,13 +136,13 @@ fail:
 
     mpack_reader_destroy(&reader);
 
-    HazeServerRequestFree(&request);
+    RequestFree(&request);
 
     return NULL;
 }
 
 void HazeServerRequestSetMethod(
-    HazeServerRequest *request,
+    Request *request,
     const char *method
 )
 {
@@ -166,50 +163,54 @@ void HazeServerRequestSetMethod(
     strcpy(request->method, method);
 }
 
-bool HazeServerRequestSetParameters(
-    HazeServerRequest *request,
-    const void *data,
-    size_t len
-)
-{
-    if (!request)
-        return false;
+RawBuffer *RequestGetRaw(Request *request) {
+    if (!request) return NULL;
 
-    free(request->parameters);
+    size_t method_len = request->method ? strlen(request->method) + 1 : 0;
+    size_t params_len = request->parameters ? RawBufferLen(request->parameters) : 0;
+    size_t total_size = sizeof(request->type) + sizeof(request->msgid) + method_len + params_len;
 
-    request->parameters = NULL;
-    request->parameters_len = 0;
+    void *raw_data = malloc(total_size);
+    if (!raw_data) return NULL;
 
-    if (!data || len == 0)
-        return true;
+    uint8_t *ptr = (uint8_t *)raw_data;
+    
+    memcpy(ptr, &request->type, sizeof(request->type));
+    ptr += sizeof(request->type);
 
-    request->parameters = malloc(len);
+    memcpy(ptr, &request->msgid, sizeof(request->msgid));
+    ptr += sizeof(request->msgid);
 
-    if (!request->parameters)
-        return false;
+    if (method_len > 0) {
+        memcpy(ptr, request->method, method_len);
+        ptr += method_len;
+    }
 
-    memcpy(request->parameters, data, len);
-    request->parameters_len = len;
+    if (params_len > 0) {
+        memcpy(ptr, RawBufferData(request->parameters), params_len);
+    }
 
-    return true;
+    return RawBufferNew(raw_data, total_size);
 }
 
-void *HazeServerRequestGetRaw(
-    HazeServerRequest *request,
-    size_t *len
-)
-{
-    if (!request)
-        return NULL;
 
-    if (len)
-        *len = request->parameters_len;
+bool RequestSetParameters(Request *request, RawBuffer *b) {
+    if (!request || !b || RawBufferLen(b) == 0) {
+        return false;
+    }
 
-    return request->parameters;
+    if (!request->parameters) {
+        request->parameters = RawBufferNew(RawBufferData(b), RawBufferLen(b));
+        return request->parameters != NULL;
+    }
+
+    return RawBufferSetData(request->parameters, RawBufferData(b), RawBufferLen(b));
 }
 
-void HazeServerRequestFree(
-    HazeServerRequest **request
+
+
+void RequestFree(
+    Request **request
 )
 {
     if (!request || !*request)
