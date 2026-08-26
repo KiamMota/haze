@@ -15,6 +15,7 @@ typedef struct {
 
 Response *ResponseNew(void);
 RawBuffer* ResponseMarshal(Response *s);
+Response* ResponseUnmarshal(RawBuffer *b);
 bool ResponseFree(Response **response);
 bool ResponseSetError(Response *s, HazeServerRPCError err);
 bool ResponseSetMsgId(Response *s, uint32_t msgid);
