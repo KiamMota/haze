@@ -76,7 +76,7 @@ bool ResponseFree(Response **response) {
   return true;
 }
 
-bool ResponseSetError(Response *s, HazeServerRPCError err) {
+bool ResponseSetError(Response *s, MpackRPCError err) {
     if (!s)
         return false;
 

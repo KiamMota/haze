@@ -14,6 +14,6 @@ typedef struct {
 } HazeRpcEntry;
 
 HazeRpcHandler HazeServerDispatchLookup(const char *method);
-void          *HazeServerDispatch(RawBuffer *b);
+RawBuffer          *HazeServerDispatch(RawBuffer *b);
 
 #endif

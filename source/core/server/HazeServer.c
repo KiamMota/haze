@@ -4,8 +4,8 @@
 #include "HazeServerMiddleware.h"
 #include "core/proto/RawBuffer.h"
 #include "core/proto/Request.h"
-#include "core/proto/Response.h"
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +18,11 @@ typedef struct {
   uv_tcp_t handle;
   uv_buf_t buf;
 } HazeConn;
+typedef struct {
+
+  uv_write_t req;
+    void *data_to_free;
+} haze_write_req_t;
 
 static void haze_on_close(uv_handle_t *handle) {
   if (handle->data) {
@@ -33,29 +38,38 @@ static void haze_on_alloc(uv_handle_t *handle, size_t suggested,
   buf->len = buf->base ? (unsigned int)suggested : 0;
 }
 static void haze_on_write_done(uv_write_t *req, int status) {
-  if (status < 0)
-    HazeLogWarn("Write error: %s", uv_strerror(status));
-  free(req);
+    if (status < 0) {
+        HazeLogWarn("Write error: %s", uv_strerror(status));
+    }
+    haze_write_req_t *wr = (haze_write_req_t *)req;
+    if (wr->data_to_free) {
+        free(wr->data_to_free);
+    }
+    free(wr);
 }
 
 void haze_send(uv_stream_t *stream, const void *data, size_t len) {
-  uv_write_t *req = malloc(sizeof(uv_write_t));
-  if (!req)
-    return;
+    haze_write_req_t *req = malloc(sizeof(haze_write_req_t));
+    if (!req) return;
 
-  uv_buf_t buf = uv_buf_init((char *)data, (unsigned int)len);
+    // Duplica o buffer para garantir a validade dos dados durante o envio assíncrono
+    void *data_copy = malloc(len);
+    if (!data_copy) {
+        free(req);
+        return;
+    }
+    memcpy(data_copy, data, len);
 
-  Response *res = ResponseNew();
+    req->data_to_free = data_copy;
+    uv_buf_t buf = uv_buf_init((char *)data_copy, (unsigned int)len);
 
-  uv_write(req, stream, &buf, 1, haze_on_write_done);
+    uv_write((uv_write_t *)req, stream, &buf, 1, haze_on_write_done);
 }
 
-static void haze_on_read(uv_stream_t *stream, ssize_t nread,
-                         const uv_buf_t *buf) {
+static void haze_on_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
   if (nread < 0) {
     if (nread != UV_EOF)
       HazeLogWarn("Read error: %s", uv_strerror((int)nread));
-
     goto close;
   }
 
@@ -64,21 +78,18 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     return;
   }
 
-  if (HazeServerMiddlewareIsHttp(buf->base, nread) == HAZE_MW_REJECT) {
-    HazeLogDebug("%s", "Received HTTP, rejected.");
-    goto close;
-  }
-
+  // Despacha o buffer binário bruto contendo o MsgPack
   RawBuffer *recv = RawBufferNew(buf->base, nread);
+  if (!recv) goto cleanup;
 
-  if (!recv)
-    goto cleanup;
+  HazeLogDebug("Recebidos %zd bytes (MsgPack)", nread);
 
+  // O HazeServerDispatch deve usar uma biblioteca de MsgPack (como cmp ou mpack)
+  // para fazer o unpack da estrutura [0, msgid, method, params]
   RawBuffer *response = HazeServerDispatch(recv);
 
   if (response) {
     haze_send(stream, RawBufferData(response), RawBufferLen(response));
-
     RawBufferFree(&response);
   }
 
@@ -91,7 +102,6 @@ close:
   free(buf->base);
   uv_close((uv_handle_t *)stream, haze_on_close);
 }
-
 static void haze_on_connect(uv_stream_t *server, int status) {
   if (status < 0) {
     HazeLogError("[haze] connect error: %s\n", uv_strerror(status));
@@ -99,6 +109,7 @@ static void haze_on_connect(uv_stream_t *server, int status) {
     return;
   }
 
+  HazeLogDebug("%s", "New Connection\n");
   HazeConn *conn = calloc(1, sizeof(HazeConn));
   if (!conn)
     return;
@@ -117,17 +128,16 @@ static void haze_on_connect(uv_stream_t *server, int status) {
 /* API pública                                                 */
 /* ---------------------------------------------------------- */
 
-HazeServer *HazeServerNew(const char *addr, uint16_t port) {
+HazeServer* HazeServerNew(const char *addr, uint16_t port) {
   HazeServer *s = calloc(1, sizeof(HazeServer));
-  if (!s)
-    return NULL;
+  if (!s) return NULL;
 
-  s->addr = strdup(addr ? addr : "127.0.0.1");
+  // Cria um loop dedicado para esta instância
+  s->loop = uv_loop_new(); 
   s->port = port;
-  s->loop = uv_default_loop();
+  s->addr = addr ? strdup(addr) : "127.0.0.1";
 
   uv_tcp_init(s->loop, &s->tcp);
-  s->tcp.data = s;
 
   return s;
 }
@@ -159,14 +169,18 @@ void HazeServerStop(HazeServer *s) {
   uv_stop(s->loop);
 }
 
-void HazeServerFree(HazeServer **s) {
-  if (!s || !*s)
-    return;
-  HazeServerStop(*s);
-  uv_loop_close((*s)->loop);
-  free((*s)->addr);
-  free(*s);
-  *s = NULL;
+void HazeServerFree(HazeServer **s_ptr) {
+  if (!s_ptr || !*s_ptr) return;
+  HazeServer *s = *s_ptr;
+
+  // Fecha o loop dedicado
+  if (s->loop) {
+    uv_loop_close(s->loop);
+    free(s->loop);
+  }
+
+  free(s);
+  *s_ptr = NULL;
 }
 
 uint16_t HazeServerPort(HazeServer *s) {

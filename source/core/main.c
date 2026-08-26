@@ -1,7 +1,7 @@
-#include "core/audio/HazeEngine.h"
-#include "core/audio/HazeSample.h"
 #include "HazeLog.h"
 #include "HazeVersion.h"
+#include "core/audio/HazeEngine.h"
+#include "core/audio/HazeSample.h"
 #include "core/server/HazeServer.h"
 #include <stdio.h>
 #include <string.h>
@@ -65,9 +65,7 @@ void HelpMessage(void) {
         stdout);
 }
 
-void VersionMessage(void) {
-  fprintf(stdout, "haze %s\n", HAZE_VERSION_STR);
-}
+void VersionMessage(void) { fprintf(stdout, "haze %s\n", HAZE_VERSION_STR); }
 
 void PlayMusic(const char *music_path) {
   HazeSample s = {};
@@ -114,13 +112,15 @@ void PlayMusic(const char *music_path) {
       break;
     case '+': {
       float volume = HazeSampleGetVolume(&s) + 0.1f;
-      if (volume > 1.0f) volume = 1.0f;
+      if (volume > 1.0f)
+        volume = 1.0f;
       HazeSampleSetVolume(&s, volume);
       break;
     }
     case '-': {
       float volume = HazeSampleGetVolume(&s) - 0.1f;
-      if (volume < 0.0f) volume = 0.0f;
+      if (volume < 0.0f)
+        volume = 0.0f;
       HazeSampleSetVolume(&s, volume);
       break;
     }
@@ -139,7 +139,7 @@ void PlayMusic(const char *music_path) {
 
 CliArgs ParseArgs(int argc, char **argv) {
   // Padrão explicitamente definido como MODE_HEADLESS
-  CliArgs args = { .mode = MODE_HEADLESS, .music_path = NULL };
+  CliArgs args = {.mode = MODE_HEADLESS, .music_path = NULL};
 
   if (argc == 1) {
     return args;
@@ -159,7 +159,8 @@ CliArgs ParseArgs(int argc, char **argv) {
         args.mode = MODE_PLAY;
         args.music_path = argv[i + 1];
       } else {
-        printf("fatal: missing audio file path.\nUsage: haze play <song_path>\n");
+        printf(
+            "fatal: missing audio file path.\nUsage: haze play <song_path>\n");
         args.mode = MODE_HELP;
       }
       return args;
@@ -172,23 +173,52 @@ CliArgs ParseArgs(int argc, char **argv) {
 int HeadlessMode(void) {
   HazeLogInfo("Starting headless Haze...");
   HazeLogInfo("Starting Haze Server...");
-  HazeServer *mainServer = HazeServerNew(NULL, 7192);
 
-  if (mainServer) {
-    HazeLogInfo("Haze Server started on %s:%d", HazeServerAddress(mainServer),
-                HazeServerPort(mainServer));
-    int err = HazeServerStart(mainServer);
-    if (err != 0) {
-      HazeLogError("Failed to start server: %s", uv_strerror(err));
+  int port = 7192;
+  HazeServer *mainServer = NULL;
+
+  while (1) {
+    mainServer = HazeServerNew(NULL, port);
+
+    if (!mainServer) {
+      HazeLogError("Failed to create Haze Server instance.");
       return 1;
     }
-    HazeServerRun(mainServer);
+
+    int err = HazeServerStart(mainServer);
+
+    // Se falhar por porta indisponível, limpa e tenta a próxima
+    if (err == UV_EADDRINUSE || err == UV_EACCES) {
+      HazeLogInfo("Port %d is unavailable (%s), trying %d...", 
+                  port, uv_strerror(err), port + 1);
+
+      HazeServerFree(&mainServer);
+      port++;
+      continue;
+    }
+
+    // Se ocorrei QUALQUER outro erro, encerra a execução
+    if (err != 0) {
+      HazeLogError("Failed to start server: %s", uv_strerror(err));
+      HazeServerFree(&mainServer);
+      return 1;
+    }
+
+    // Se err == 0, o servidor iniciou com SUCESSO. Registra o log e sai do loop.
+    HazeLogInfo("Haze Server started on %s:%d",
+                HazeServerAddress(mainServer),
+                HazeServerPort(mainServer));
+    break; 
   }
+
+  // Executa o loop bloqueante do libuv
+  HazeServerRun(mainServer);
+
   HazeLogInfo("Server process terminated.");
+  HazeServerFree(&mainServer);
 
   return 0;
 }
-
 int main(int argc, char **argv) {
   CliArgs args = ParseArgs(argc, argv);
 

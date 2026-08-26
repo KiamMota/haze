@@ -14,6 +14,7 @@ typedef enum {
 
 typedef enum {
     HAZE_RPC_ERROR_NONE = 0,
+    MPACKRPC_MALFORMED_REQ,
 
     HAZE_RPC_ERROR_PARSE_ERROR,
     HAZE_RPC_ERROR_INVALID_REQUEST,
@@ -27,7 +28,7 @@ typedef enum {
     HAZE_RPC_ERROR_CONNECTION_CLOSED,
 
     HAZE_RPC_ERROR_UNKNOWN
-} HazeServerRPCError;
+} MpackRPCError;
 
 
 #endif

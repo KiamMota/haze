@@ -1,4 +1,5 @@
 #include "Request.h"
+#include "HazeLog.h"
 #include "core/proto/RawBuffer.h"
 #include "mpack/mpack.h"
 
@@ -17,128 +18,85 @@ Request *HazeServerRequestNew(void)
 
     return request;
 }
-Request *RequestUnmarshal(RawBuffer *b)
-{
-  if (!RawBufferLen(b))  {
-    return NULL;
+
+Request *RequestUnmarshal(RawBuffer *b) {
+  if (!b || !RawBufferLen(b)) return NULL;
+
+  mpack_reader_t reader;
+  mpack_reader_init_data(&reader, RawBufferData(b), RawBufferLen(b));
+  Request *request = NULL;
+
+  /* 1. Expect an array of 4 elements */
+  mpack_tag_t tag = mpack_read_tag(&reader);
+  if (mpack_reader_error(&reader) != mpack_ok) goto fail;
+  
+  if (mpack_tag_type(&tag) != mpack_type_array) {
+      HazeLogError("Unmarshal failed: Expected ARRAY, got type %d", mpack_tag_type(&tag));
+      goto fail;
+  }
+  if (mpack_tag_array_count(&tag) != 4) {
+      HazeLogError("Unmarshal failed: Expected 4 items, got %d items", mpack_tag_array_count(&tag));
+      goto fail;
   }
 
-    mpack_reader_t reader;
+  request = HazeServerRequestNew();
+  if (!request) goto fail;
 
-    mpack_reader_init_data(
-        &reader, RawBufferData(b), RawBufferLen(b)
-    );
-
-    Request *request = NULL;
-
-    /* [type, msgid, method, params] */
-    uint32_t count = mpack_expect_array(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
-
-    if (count != 4)
-        goto fail;
-
-    request = HazeServerRequestNew();
-
-    if (!request)
-        goto fail;
-
-    /*
-     * type
-     */
-    uint8_t type = mpack_expect_u8(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
-
-    if (type != HAZE_RPC_REQUEST)
-        goto fail;
-
-    request->type = (HazeServerRPCType)type;
-
-    /*
-     * msgid
-     */
-    request->msgid = mpack_expect_u32(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
-
-    /*
-     * method
-     */
-    size_t method_len = mpack_expect_str(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
-
-    request->method = malloc(method_len + 1);
-
-    if (!request->method)
-        goto fail;
-
-    mpack_read_bytes(
-        &reader,
-        request->method,
-        method_len
-    );
-
-    request->method[method_len] = '\0';
-
-    mpack_done_str(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
-
-    /*
-     * params
-     *
-     * Mantemos o objeto MessagePack bruto.
-     * Isso permite que o parser de parâmetros seja
-     * executado posteriormente.
-     */
-
-    mpack_tag_t params_tag = mpack_read_tag(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
-
-    /*
-     * Aqui não devemos transformar params em BIN.
-     * O protocolo diz que params é um objeto MessagePack,
-     * especificamente um array.
-     */
-
-    if (mpack_tag_type(&params_tag) != mpack_type_array)
+  /* 2. Type */
+  tag = mpack_read_tag(&reader);
+  if (mpack_tag_type(&tag) != mpack_type_uint && mpack_tag_type(&tag) != mpack_type_int) {
+      HazeLogError("Unmarshal failed [Type]: Expected INT/UINT, got type %d", mpack_tag_type(&tag));
       goto fail;
+  }
+  request->type = (HazeServerRPCType)mpack_tag_uint_value(&tag);
+  if (request->type != HAZE_RPC_REQUEST) {
+      HazeLogError("Unmarshal failed [Type]: Value is %d, expected %d (HAZE_RPC_REQUEST)", request->type, HAZE_RPC_REQUEST);
+      goto fail;
+  }
 
-    /*
-     * Neste ponto, os parâmetros ainda pertencem ao
-     * reader. Para guardar os bytes crus, precisamos
-     * de uma estratégia de captura do objeto original.
-     *
-     * O MPack reader não fornece diretamente "retornar
-     * os bytes do objeto já lido".
-     */
+  /* 3. MsgID */
+  tag = mpack_read_tag(&reader);
+  if (mpack_tag_type(&tag) != mpack_type_uint && mpack_tag_type(&tag) != mpack_type_int) {
+      HazeLogError("Unmarshal failed [MsgID]: Expected INT/UINT, got type %d", mpack_tag_type(&tag));
+      goto fail;
+  }
+  request->msgid = (uint32_t)mpack_tag_uint_value(&tag);
 
-    mpack_done_array(&reader);
+  /* 4. Method */
+  tag = mpack_read_tag(&reader);
+  if (mpack_tag_type(&tag) != mpack_type_str) {
+      HazeLogError("Unmarshal failed [Method]: Expected STR, got type %d (Hint: Python client might be sending BIN)", mpack_tag_type(&tag));
+      goto fail;
+  }
+  
+  uint32_t method_len = mpack_tag_str_length(&tag);
+  request->method = malloc(method_len + 1);
+  if (!request->method) goto fail;
 
-    if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
+  mpack_read_bytes(&reader, request->method, method_len);
+  request->method[method_len] = '\0';
+  mpack_done_str(&reader);
 
+  if (mpack_reader_error(&reader) != mpack_ok) goto fail;
+
+  /* 5. Params */
+  mpack_discard(&reader);
+  mpack_done_array(&reader);
+
+  if (mpack_reader_error(&reader) == mpack_ok) {
     mpack_reader_destroy(&reader);
-
     return request;
+  }
 
 fail:
-
-    mpack_reader_destroy(&reader);
-
-    RequestFree(&request);
-
-    return NULL;
+  if (mpack_reader_error(&reader) != mpack_ok) {
+      HazeLogError("MPack Reader Error: %s", mpack_error_to_string(mpack_reader_error(&reader)));
+  }
+  mpack_reader_destroy(&reader);
+  if (request) {
+      RequestFree(&request);
+  }
+  return NULL;
 }
 
 void HazeServerRequestSetMethod(
