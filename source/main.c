@@ -1,8 +1,9 @@
 #include "HazeLog.h"
 #include "HazeVersion.h"
-#include "core/audio/HazeEngine.h"
-#include "core/audio/HazeSample.h"
-#include "core/server/HazeServer.h"
+#include "Session.h"
+#include "audio/HazeEngine.h"
+#include "audio/HazeSample.h"
+#include "server/HazeServer.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -170,7 +171,7 @@ CliArgs ParseArgs(int argc, char **argv) {
   return args;
 }
 
-int HeadlessMode(void) {
+int ServerInit(void) {
   HazeLogInfo("Starting headless Haze...");
   HazeLogInfo("Starting Haze Server...");
 
@@ -220,6 +221,8 @@ int HeadlessMode(void) {
   return 0;
 }
 int main(int argc, char **argv) {
+  Session* s = SessionNew(NULL);
+  printf("Your session: %s\n", SessionName(s));
   CliArgs args = ParseArgs(argc, argv);
 
   // Comandos informativos saem direto sem tocar no audio engine
@@ -245,5 +248,5 @@ int main(int argc, char **argv) {
   }
 
   // Comportamento Padrão (Sem argumentos)
-  return HeadlessMode();
+  return ServerInit();
 }
