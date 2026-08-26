@@ -5,7 +5,9 @@
 #include "mpack/mpack.h"
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 Response *ResponseNew(void) {
   Response *response = calloc(1, sizeof(Response));
@@ -321,4 +323,32 @@ fail:
         ResponseFree(&response);
 
     return NULL;
+}
+
+Response* ResponseCreateStrResult(uint32_t msgid, const char* res)
+{
+    HazeLogDebug("ResponseNew");
+
+    Response* resp = ResponseNew();
+
+    if (!resp) {
+        HazeLogError("ResponseNew returned NULL");
+        return NULL;
+    }
+
+    HazeLogDebug("ResponseSetMsgId");
+
+    ResponseSetMsgId(resp, msgid);
+
+    HazeLogDebug("ResponseSetResult");
+
+    ResponseSetResult(
+        resp,
+        (void*)res,
+        strlen(res)
+    );
+
+    HazeLogDebug("ResponseCreateStrResult done");
+
+    return resp;
 }

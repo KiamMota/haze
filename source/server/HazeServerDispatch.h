@@ -7,12 +7,10 @@
 #include "proto/Response.h"
 
 typedef Response *(*HazeRpcHandler)(Request *req);
-
 typedef struct {
     const char    *method;
     HazeRpcHandler handler;
 } HazeRpcEntry;
-
 HazeRpcHandler HazeServerDispatchLookup(const char *method);
 Response          *HazeServerDispatch(Request *b);
 

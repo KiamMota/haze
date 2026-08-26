@@ -24,30 +24,34 @@ typedef enum {
 static inline const char *_HazeLog_level_str(HazeLogLevel level) {
   switch (level) {
   case HAZE_LOG_DEBUG:
-    return HAZE_COLOR_GRAY "DEBUG" HAZE_COLOR_RESET;
+    return HAZE_COLOR_GRAY "DBG" HAZE_COLOR_RESET;
   case HAZE_LOG_INFO:
-    return HAZE_COLOR_CYAN "INFO " HAZE_COLOR_RESET;
+    return HAZE_COLOR_CYAN "INF" HAZE_COLOR_RESET;
   case HAZE_LOG_WARN:
-    return HAZE_COLOR_YELLOW "WARN " HAZE_COLOR_RESET;
+    return HAZE_COLOR_YELLOW "WRN" HAZE_COLOR_RESET;
   case HAZE_LOG_ERROR:
-    return HAZE_COLOR_RED "ERROR" HAZE_COLOR_RESET;
+    return HAZE_COLOR_RED "ERR" HAZE_COLOR_RESET;
   case HAZE_LOG_FATAL:
-    return HAZE_COLOR_MAGENTA "FATAL" HAZE_COLOR_RESET;
+    return HAZE_COLOR_MAGENTA "FTL" HAZE_COLOR_RESET;
   default:
-    return "?????";
+    return "???";
   }
 }
 
 static inline void _HazeLog(HazeLogLevel level, const char *file, int line,
                             const char *fmt, ...) {
-  time_t t = time(NULL);
-  struct tm *tm = localtime(&t);
+  struct timespec ts;
+  timespec_get(&ts, TIME_UTC);
+  
+  struct tm *tm = localtime(&ts.tv_sec);
   char timebuf[20];
-  strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", tm);
+  strftime(timebuf, sizeof(timebuf), "%H:%M:%S", tm);
 
-  fprintf(stderr, "%s[%s]%s [%s] %s%s:%d%s | ", HAZE_COLOR_GRAY, timebuf,
-          HAZE_COLOR_RESET, _HazeLog_level_str(level), HAZE_COLOR_GRAY, file,
-          line, HAZE_COLOR_RESET);
+  // Adicionado .%03ld para exibir os milissegundos
+  fprintf(stderr, "%s[%s.%03ld]%s [%s] %s(%s:%d)%s ", 
+          HAZE_COLOR_GRAY, timebuf, ts.tv_nsec / 1000000, HAZE_COLOR_RESET, 
+          _HazeLog_level_str(level), 
+          HAZE_COLOR_GRAY, file, line, HAZE_COLOR_RESET);
 
   va_list args;
   va_start(args, fmt);

@@ -1,19 +1,18 @@
 /* HazeServerFuncDispatch.c */
 #include "HazeServerDispatch.h"
 #include "HazeLog.h"
-#include "functions/HazeFuncPing.h"
 #include "proto/MessagePackRPC.h"
 #include "proto/RawBuffer.h"
 #include "proto/Request.h"
 #include "proto/Response.h"
+#include "server/FuncTable.h"
 #include <string.h>
 
 /* ---------------------------------------------------------- */
 /* Tabela de dispatch                                          */
 /* ---------------------------------------------------------- */
 
-static const HazeRpcEntry haze_rpc_table[] = {{"ping", HazeFuncPing},
-                                              {NULL, NULL}};
+
 
 HazeRpcHandler HazeServerDispatchLookup(const char *method) {
   if (!method)

@@ -10,6 +10,8 @@ typedef struct {
   time_t working_time;
 } Session;
 
+extern Session* SessionInstance;
+
 Session* SessionNew(const char* SessionName);
 void SessionFree(Session** s);
 bool SessionSetName(Session* s, const char* SessionName);

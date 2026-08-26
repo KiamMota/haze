@@ -1,5 +1,4 @@
 #include "Session.h"
-#include <corecrt_search.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +7,9 @@
 #include <urlmon.h>
 
 #define NAME_MAX 15
+
+Session* SessionInstance;
+
 static const char *session_name_random(void) {
   srand(time(NULL));
   const char *first[NAME_MAX] = {

@@ -1,5 +1,8 @@
 #include "Request.h"
 #include "HazeLog.h"
+#include "mpack/mpack-common.h"
+#include "mpack/mpack-expect.h"
+#include "mpack/mpack-reader.h"
 #include "proto/RawBuffer.h"
 #include "mpack/mpack.h"
 
@@ -288,4 +291,42 @@ void RequestFree(Request **request) {
   free(*request);
 
   *request = NULL;
+}
+
+bool RequestParamIsString(Request *r) {
+    if (!r || !r->parameters) {
+        return false;
+    }
+
+    mpack_reader_t reader;
+
+    mpack_reader_init_data(
+        &reader,
+        RawBufferData(r->parameters),
+        RawBufferLen(r->parameters)
+    );
+
+    uint32_t count = mpack_expect_array(&reader);
+
+    if (count == 0) {
+        mpack_reader_destroy(&reader);
+        return false;
+    }
+
+    mpack_tag_t tag = mpack_peek_tag(&reader);
+
+    bool result = mpack_tag_type(&tag) == mpack_type_str;
+
+    mpack_reader_destroy(&reader);
+
+    return result;
+}
+
+int RequestParamCount(Request *r) {
+  if (!r || !r->parameters) return false;
+  mpack_reader_t rd;
+  mpack_reader_init_data(&rd, RawBufferData(r->parameters), RawBufferLen(r->parameters));
+  int count = mpack_expect_array(&rd);
+  mpack_reader_destroy(&rd);
+  return count;
 }
