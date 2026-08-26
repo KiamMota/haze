@@ -1,4 +1,5 @@
 #include "Session.h"
+#include <corecrt_search.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,14 +26,17 @@ static const char *session_name_random(void) {
   int second_v = rand() % NAME_MAX;
   int tamanho = strlen(first[first_v]) + 1 + strlen(second[second_v]) + 1;
 
-  char* name = malloc(tamanho);
-  snprintf(name, tamanho, "%s_%s", first[first_v], second[second_v]); 
+  char *name = malloc(tamanho);
+  snprintf(name, tamanho, "%s_%s", first[first_v], second[second_v]);
   return name;
 }
 
 Session *SessionNew(const char *session_name) {
   Session *s = (Session *)malloc(sizeof(Session));
+  s->working_time = time(NULL);
   s->session_name = malloc(sizeof(char *));
+  // no project path yet.
+  s->project_path = NULL;
   if (session_name == NULL) {
     s->session_name = strdup(session_name_random());
   } else {
@@ -41,11 +45,17 @@ Session *SessionNew(const char *session_name) {
   return s;
 }
 
-const char* SessionName(Session*s) {
-  return s->session_name;
-}
+bool SessionSetName(Session *s, const char *SessionName) {
+  int max_name_len = 255;
+  if (!s || !s->session_name || !SessionName) {
+    return false;
+  }
 
-bool SessionSetName(const char *SessionName) {
+  if (strlen(SessionName) >= max_name_len) {
+    return false;
+  }
 
+  snprintf(s->session_name, max_name_len, "%s", SessionName);
 
+  return true;
 }

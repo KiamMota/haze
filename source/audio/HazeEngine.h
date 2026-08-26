@@ -1,7 +1,7 @@
 #ifndef HAZEENGINE_DEC
 #define HAZEENGINE_DEC
 
-#include "miniaudio.h"
+#include "miniaudio/miniaudio.h"
 #include "HazeMacros.h"
 #include <stdbool.h>
 EXPORT_CPP_BEGIN
