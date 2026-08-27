@@ -14,7 +14,7 @@ The way to connect to the Haze kernel is by creating a MsgPack-RPC client.
 graph TD
     Client["Client (UI)"]
     RPC["MessagePack-RPC"]
-    Core["HazeCore (Engine + DSP)"]
+    Core["HazeCore"]
     AudioHW["Audio Hardware / Drivers"]
 
     Client <-->|Commands / State| RPC
