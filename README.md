@@ -16,7 +16,7 @@ graph TD;
     RPC["MessagePack-RPC"]
     Core["HazeCore"]
     OS["OS<br/>Pipes · Files"]
-    Hardware["Hardware"]
+    Hardware["Hardware (Control)"]
 
     Client <--> RPC;
     RPC <--> Core;
@@ -25,4 +25,7 @@ graph TD;
 
     Core --> Project["In-Memory Project State"];
     Core --> File[".hz Project"];
+
+    Core -.->|Audio| Client;
+
 ```
