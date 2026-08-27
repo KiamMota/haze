@@ -11,24 +11,20 @@ Haze was designed to work with a "kernel-based" architecture, where the kernel m
 The way to connect to the Haze kernel is by creating a MsgPack-RPC client.
 
 ``` mermaid
-graph TD;
+graph TD
     Client["Client (UI)"]
     RPC["MessagePack-RPC"]
-    Core["HazeCore (Engine)"]
-    OS["Audio Drivers<br/>"]
+    Core["HazeCore (Engine + DSP)"]
+    AudioHW["Audio Hardware / Drivers"]
 
-    Client <-->|Get / Set Session State| RPC;
-    RPC <--> Core;
+    Client <-->|Commands / State| RPC
+    RPC <--> Core
 
-    Core <-->|Pipes · Files · IO| OS;
+    Core <-->|Files · IO| OS["Operating System"]
+    Core --> Project["In-Memory Session State"]
+    Core --> File[".hz Project"]
 
-    Core --> Project["In-Memory Session State"];
-    Core --> File[".hz Project"];
-
-    OS ===>|Real-Time Audio Stream| Client;
-
-    classDef highlight fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef audio stroke:#333,stroke-width:3px;
+    Core ==>|Real-Time Audio Stream| AudioHW
 
 
 ```
