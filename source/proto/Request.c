@@ -294,19 +294,28 @@ void RequestFree(Request **request) {
 }
 
 int RequestParamCount(const Request *r) {
-  if (!r || !r->parameters)
-    return 0;
+    if (!r || !r->parameters)
+        return 0;
 
-  mpack_reader_t rd;
-  mpack_reader_init_data(&rd, RawBufferData(r->parameters),
-                         RawBufferLen(r->parameters));
+    mpack_reader_t rd;
+    mpack_reader_init_data(
+        &rd,
+        RawBufferData(r->parameters),
+        RawBufferLen(r->parameters)
+    );
 
-  int count = mpack_expect_array(&rd);
+    int count = mpack_expect_array(&rd);
 
-  if (mpack_reader_destroy(&rd) != mpack_ok)
-    return 0;
+    for (int i = 0; i < count; i++) {
+        mpack_discard(&rd);
+    }
 
-  return count;
+    mpack_done_array(&rd);
+
+    if (mpack_reader_destroy(&rd) != mpack_ok)
+        return 0;
+
+    return count;
 }
 
 bool RequestParamIsType(const Request *r, ParamType type, uint32_t index) {
