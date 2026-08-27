@@ -85,6 +85,7 @@ RawBuffer *ResponseMarshal(Response *s)
 
     return buffer;
 }
+
 bool ResponseFree(Response **response) {
   if (!response || !*response)
     return false;

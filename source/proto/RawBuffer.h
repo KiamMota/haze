@@ -24,6 +24,11 @@ typedef struct {
  */
 RawBuffer *RawBufferNew(void *data, size_t len);
 
+static inline RawBuffer RawBufferInit(const void* data, size_t len)  {
+  RawBuffer rb = {.data = data, .len = len};
+  return rb;
+}
+
 /**
  * @brief Frees a raw buffer and its associated data.
  *

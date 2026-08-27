@@ -87,7 +87,7 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     return;
   }
 
-  RawBuffer *recv = RawBufferNew(buf->base, nread);
+  RawBuffer recv = RawBufferInit(buf->base, nread);
 
   /*
    * Transport layer:
@@ -95,7 +95,7 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
    */
   HazeLogDebug("Deserializing incoming request...");
 
-  Request *request = RequestUnmarshal(recv);
+  Request *request = RequestUnmarshal(&recv);
 
   if (!request) {
     HazeLogWarn("Failed to deserialize incoming request");
@@ -122,10 +122,6 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
   }
 
 
-  /*
-   * Dispatcher layer:
-   * Request -> Response
-   */
   HazeLogDebug("%s", "Dispatching request...");
   Response *response = HazeServerDispatch(request);
 
@@ -134,21 +130,20 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     goto cleanup;
   }
 
-  RawBuffer *send_buff = ResponseMarshal(response);
+  RawBuffer *sendResponse = ResponseMarshal(response);
 
-  if (!send_buff) {
+  if (!sendResponse) {
     HazeLogError("Failed to serialize response");
     ResponseFree(&response);
     goto cleanup;
   }
 
-  haze_send(stream, RawBufferData(send_buff), RawBufferLen(send_buff));
+  haze_send(stream, RawBufferData(sendResponse), RawBufferLen(sendResponse));
 
-  RawBufferFree(&send_buff);
+  RawBufferFree(&sendResponse);
   ResponseFree(&response);
 
 cleanup:
-  RawBufferFree(&recv);
   free(buf->base);
   return;
 }
