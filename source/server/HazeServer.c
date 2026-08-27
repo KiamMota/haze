@@ -77,7 +77,9 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     if (nread != UV_EOF)
       HazeLogWarn("Read error: %s", uv_strerror((int)nread));
 
-    goto close;
+    free(buf->base);
+    uv_close((uv_handle_t *)stream, haze_on_close);
+    return;
   }
 
   if (nread == 0) {
@@ -85,14 +87,8 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     return;
   }
 
-  HazeLogDebug("Received %zd bytes (MsgPack)", nread);
-
   RawBuffer *recv = RawBufferNew(buf->base, nread);
-  if (!recv)
-    goto cleanup;
-  HazeLogDebug("libuv first bytes: %02X %02X %02X %02X",
-               (unsigned char)buf->base[0], (unsigned char)buf->base[1],
-               (unsigned char)buf->base[2], (unsigned char)buf->base[3]);
+
   /*
    * Transport layer:
    * RawBuffer -> Request
@@ -103,17 +99,18 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
 
   if (!request) {
     HazeLogWarn("Failed to deserialize incoming request");
-
+    // so the request is invalid, then the server will 
+    // create a fallback response for it
     Response *error = ResponseNew();
     if (error) {
       ResponseSetMsgId(error, 0);
       ResponseSetError(error, MPACKRPC_MALFORMED_REQ);
 
+      // transform response in raw buffer -> send -> client
       RawBuffer *response = ResponseMarshal(error);
 
       if (response) {
         haze_send(stream, RawBufferData(response), RawBufferLen(response));
-
         RawBufferFree(&response);
       }
 
@@ -121,43 +118,39 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     }
 
     goto cleanup;
+    // end here
   }
 
-  HazeLogDebug("Request deserialized: ID=%u, Method='%s'", request->msgid,
-               request->method ? request->method : "NULL");
 
   /*
    * Dispatcher layer:
    * Request -> Response
    */
+  HazeLogDebug("%s", "Dispatching request...");
   Response *response = HazeServerDispatch(request);
 
+
   if (!response) {
-    HazeLogError("Dispatcher returned NULL");
     goto cleanup;
   }
 
-  RawBuffer *send_buffer = ResponseMarshal(response);
+  RawBuffer *send_buff = ResponseMarshal(response);
 
-  if (!send_buffer) {
+  if (!send_buff) {
     HazeLogError("Failed to serialize response");
     ResponseFree(&response);
     goto cleanup;
   }
 
-  haze_send(stream, RawBufferData(send_buffer), RawBufferLen(send_buffer));
+  haze_send(stream, RawBufferData(send_buff), RawBufferLen(send_buff));
 
-  RawBufferFree(&send_buffer);
+  RawBufferFree(&send_buff);
   ResponseFree(&response);
 
 cleanup:
   RawBufferFree(&recv);
   free(buf->base);
   return;
-
-close:
-  free(buf->base);
-  uv_close((uv_handle_t *)stream, haze_on_close);
 }
 
 static void haze_on_connect(uv_stream_t *server, int status) {

@@ -1,20 +1,50 @@
 #include "HazeFuncSessionCreate.h"
 #include "HazeLog.h"
+#include "Session.h"
+#include "functions/Result.h"
 #include "proto/Request.h"
 #include "proto/Response.h"
-#include <stdio.h>
+
+static Result SessionInit(void)
+{
+    if (SessionInstance == NULL) {
+        SessionInstance = SessionNew(NULL);
+        return ResultInit("Session created successfully.", true);
+    }
+
+    return ResultInit(
+        "The current session instance has already been created.",
+        false
+    );
+}
 
 Response *HazeFuncSessionCreate(Request *rq)
 {
-    HazeLogDebug("HazeFuncSessionCreate started");
-
-    if (RequestParamCount(rq) == 1) {
-      printf("parametros corretos \n");
-    }
-    if (RequestParamIsString(rq)) {
-        HazeLogDebug("Received string parameter");
+    if (!rq) {
+        return ResponseCreateStrResult(
+            0,
+            "Invalid request."
+        );
     }
 
-    HazeLogDebug("Creating response");
-    return ResponseCreateStrResult(RequestMsgId(rq), "accepted.");
+    if (RequestParamCount(rq) != 1) {
+        return ResponseCreateStrResult(
+            RequestMsgId(rq),
+            "Invalid parameter count. Expected 1 parameter."
+        );
+    }
+
+    if (!RequestParamIsString(rq, 0)) {
+        return ResponseCreateStrResult(
+            RequestMsgId(rq),
+            "Invalid parameter type. Expected a string."
+        );
+    }
+
+    Result res = SessionInit();
+
+    return ResponseCreateStrResult(
+        RequestMsgId(rq),
+        res.msg
+    );
 }

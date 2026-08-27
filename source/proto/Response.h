@@ -17,11 +17,24 @@ typedef struct {
 Response *ResponseNew(void);
 RawBuffer* ResponseMarshal(Response *s);
 Response* ResponseUnmarshal(RawBuffer *b);
+
+static inline const RawBuffer* ResponseResult(Response* r) {
+  return r->result;
+}
+
+static inline const RawBuffer* ResponseError(Response* r)  {
+  return r->error;
+}
+static inline uint32_t ResponseMsgId(Response* r) {
+  return r->msgid;
+}
+
 bool ResponseFree(Response **response);
 bool ResponseSetError(Response *s, MpackRPCError err);
 bool ResponseSetMsgId(Response *s, uint32_t msgid);
 bool ResponseSetResult(Response *s,  void* data, size_t len);
 
 Response* ResponseCreateStrResult(uint32_t msgid, const char* result);
+Response* ResponseCreateStrError(uint32_t msgid, const char* error);
 
 #endif

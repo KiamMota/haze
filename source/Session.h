@@ -12,6 +12,7 @@ typedef struct {
 
 extern Session* SessionInstance;
 
+
 Session* SessionNew(const char* SessionName);
 void SessionFree(Session** s);
 bool SessionSetName(Session* s, const char* SessionName);

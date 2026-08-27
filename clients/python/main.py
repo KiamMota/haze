@@ -1,5 +1,6 @@
 from proto import Request, Response
 import asyncio
+import msgpack
 
 
 class AudioClient:
@@ -28,14 +29,23 @@ class AudioClient:
         self.writer.write(request.marshal())
         await self.writer.drain()
 
-        data = await self.reader.read(4096)
+        unpacker = msgpack.Unpacker(raw=False)
 
-        if not data:
-            raise ConnectionError("Server closed the connection")
+        while True:
+            data = await self.reader.read(4096)
 
-        response = Response.unmarshal(data)
+            if not data:
+                raise ConnectionError("Server closed the connection")
 
-        return response
+            unpacker.feed(data)
+
+            for value in unpacker:
+                response = Response.unmarshal(
+                    msgpack.packb(value, use_bin_type=True)
+                )
+
+                if response.msg_id == self.msg_id:
+                    return response
 
 
 async def main():

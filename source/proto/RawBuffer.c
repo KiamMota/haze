@@ -5,21 +5,25 @@
 #include <string.h>
 
 RawBuffer *RawBufferNew(void *data, size_t len) {
-  if (!data || len == 0)
-    return NULL;
-
   RawBuffer *buffer = malloc(sizeof(RawBuffer));
+
   if (!buffer)
     return NULL;
 
-  buffer->data = malloc(len);
-  if (!buffer->data) {
-    free(buffer);
-    return NULL;
-  }
+  buffer->data = NULL;
+  buffer->len = 0;
 
-  memcpy(buffer->data, data, len);
-  buffer->len = len;
+  if (data && len > 0) {
+    buffer->data = malloc(len);
+
+    if (!buffer->data) {
+      free(buffer);
+      return NULL;
+    }
+
+    memcpy(buffer->data, data, len);
+    buffer->len = len;
+  }
 
   return buffer;
 }

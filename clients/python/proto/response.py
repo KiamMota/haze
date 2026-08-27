@@ -28,6 +28,7 @@ class Response:
     @classmethod
     def unmarshal(cls, data: bytes) -> "Response":
         value = msgpack.unpackb(data, raw=False)
+        print(repr(value))
 
         if len(value) != 4:
             raise ValueError("Invalid MessagePack-RPC response")

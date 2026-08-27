@@ -4,14 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <urlmon.h>
 
-#define NAME_MAX 15
 
 Session* SessionInstance;
 
+#define NAME_MAX 15
+#define CLARA_NAME 67+76+65+82+65
 static const char *session_name_random(void) {
-  srand(time(NULL));
+  srand(CLARA_NAME ^ (unsigned int)time(NULL));
   const char *first[NAME_MAX] = {
       "goofball", "biscuit", "wombat", "noodle", "badger",
       "gizmo",    "doofus",  "gecko",  "rascal", "walrus",

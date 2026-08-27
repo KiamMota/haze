@@ -2,7 +2,6 @@
 #include "HazeServerDispatch.h"
 #include "HazeLog.h"
 #include "proto/MessagePackRPC.h"
-#include "proto/RawBuffer.h"
 #include "proto/Request.h"
 #include "proto/Response.h"
 #include "server/FuncTable.h"
@@ -11,8 +10,6 @@
 /* ---------------------------------------------------------- */
 /* Tabela de dispatch                                          */
 /* ---------------------------------------------------------- */
-
-
 
 HazeRpcHandler HazeServerDispatchLookup(const char *method) {
   if (!method)
@@ -24,51 +21,45 @@ HazeRpcHandler HazeServerDispatchLookup(const char *method) {
   return NULL;
 }
 
+Response *HazeServerDispatch(Request *req) {
+  if (!req) {
+    HazeLogWarn("Received NULL request.");
+    return NULL;
+  }
 
-Response *HazeServerDispatch(Request *req)
-{
-    if (!req) {
-        HazeLogError("%s", "Dispatch received NULL Request");
-        return NULL;
-    }
+  HazeLogDebug("Received request | ID: %u | Method: '%s'", RequestMsgId(req),
+               RequestMethod(req));
 
-    HazeLogDebug(
-        "Request dispatched: ID=%d, Method='%s'",
-        req->msgid,
-        req->method ? req->method : "NULL"
-    );
+  HazeRpcHandler handler = HazeServerDispatchLookup(RequestMethod(req));
 
-    HazeRpcHandler handler = HazeServerDispatchLookup(req->method);
+  if (!handler) {
+    HazeLogWarn("Method not found | ID: %u | Method: '%s'", RequestMsgId(req),
+                RequestMethod(req));
 
-    if (!handler) {
-        HazeLogWarn(
-            "Method not found: '%s'",
-            req->method ? req->method : "NULL"
-        );
+    Response *res = ResponseNew();
 
-        Response *res = ResponseNew();
-        if (!res) {
-            HazeLogError("%s", "Failed to create error response");
-            return NULL;
-        }
+    ResponseSetMsgId(res, RequestMsgId(req));
+    ResponseSetError(res, HAZE_RPC_ERROR_METHOD_NOT_FOUND);
 
-        ResponseSetMsgId(res, req->msgid);
-        ResponseSetError(res, HAZE_RPC_ERROR_METHOD_NOT_FOUND);
-
-        return res;
-    }
-
-    HazeLogDebug("Executing handler for '%s'...", req->method);
-
-    Response *res = handler(req);
-
-    if (!res) {
-        HazeLogError(
-            "Handler returned NULL for method '%s'",
-            req->method ? req->method : "NULL"
-        );
-        return NULL;
-    }
+    HazeLogDebug("Sending response | ID: %u | Error: %d", ResponseMsgId(res),
+                 ResponseError(res));
 
     return res;
+  }
+
+  Response *res = handler(req);
+  HazeLogDebug("RESULT ptr=%p len=%zu first=%u", RawBufferData(res->result),
+               RawBufferLen(res->result),
+               ((unsigned char *)RawBufferData(res->result))[0]);
+
+  HazeLogDebug("Sending response | ID: %u | Error: %d | Result: %.*s",
+               ResponseMsgId(res), ResponseError(res),
+               (int)RawBufferLen(res->result),
+               (const char *)RawBufferData(res->result));
+  HazeLogDebug("Sending response | ID: %u | Error: %d | Result: %.*s",
+               ResponseMsgId(res), ResponseError(res),
+               (int)RawBufferLen(res->result),
+               (const char *)RawBufferData(res->result));
+
+  return res;
 }

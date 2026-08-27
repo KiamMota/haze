@@ -26,26 +26,24 @@ typedef struct {
 Request *RequestUnmarshal(RawBuffer *b);
 RawBuffer* RequestMarshal(Request* r);
 
-Request *HazeServerRequestNew(void);
+Request *ServerRequestNew(void);
 
 void HazeServerRequestSetMethod(Request *request, const char *method);
-
 bool RequestSetParameters(Request *request, RawBuffer *b);
 
-
-static inline const RawBuffer* RequestParameters(Request* r) {
+static inline const RawBuffer* RequestParameters(const Request* r) {
   return r->parameters;
 }
-static inline uint32_t RequestMsgId(Request *r) {
+static inline uint32_t RequestMsgId(const Request *r) {
   return r->msgid;
 }
-static inline const char* RequestMethod(Request *r) {
+static inline const char* RequestMethod(const Request *r) {
   return r->method;
 }
 
 void RequestFree(Request **request);
 
 int RequestParamCount(Request* r);
-bool RequestParamIsString(Request* r);
+bool RequestParamIsString(Request* r, uint32_t index);
 
 #endif
