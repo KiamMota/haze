@@ -2,6 +2,7 @@
 #include "HazeLog.h"
 #include "mpack/mpack-reader.h"
 #include "mpack/mpack.h"
+#include "proto/MessagePackRPC.h"
 #include "proto/RawBuffer.h"
 
 #include <stddef.h>
