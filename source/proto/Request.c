@@ -293,44 +293,92 @@ void RequestFree(Request **request) {
   *request = NULL;
 }
 
-bool RequestParamIsString(Request *r, uint32_t target_index) {
-  if (!r || !r->parameters) {
-    return false;
-  }
-
-  mpack_reader_t reader;
-  mpack_reader_init_data(&reader, RawBufferData(r->parameters),
-                         RawBufferLen(r->parameters));
-
-  // 1. Espera que o início do buffer seja um Array MessagePack
-  uint32_t count = mpack_expect_array(&reader);
-
-  // Se houve erro na leitura do array ou o índice pedido está fora do limite
-  if (mpack_reader_error(&reader) != mpack_ok || target_index >= count) {
-    mpack_reader_destroy(&reader);
-    return false;
-  }
-
-  // 2. Pula os elementos anteriores até chegar no índice desejado
-  for (uint32_t i = 0; i < target_index; i++) {
-    mpack_discard(&reader);
-  }
-
-  // 3. Olha a tag do elemento na posição escolhida
-  mpack_tag_t tag = mpack_peek_tag(&reader);
-  bool result = (mpack_tag_type(&tag) == mpack_type_str);
-
-  mpack_reader_destroy(&reader);
-  return result;
-}
-
-int RequestParamCount(Request *r) {
+int RequestParamCount(const Request *r) {
   if (!r || !r->parameters)
-    return false;
+    return 0;
+
   mpack_reader_t rd;
   mpack_reader_init_data(&rd, RawBufferData(r->parameters),
                          RawBufferLen(r->parameters));
+
   int count = mpack_expect_array(&rd);
-  mpack_reader_destroy(&rd);
+
+  if (mpack_reader_destroy(&rd) != mpack_ok)
+    return 0;
+
   return count;
+}
+
+bool RequestParamIsType(const Request *r, ParamType type, uint32_t index) {
+    if (!r || !r->parameters)
+        return false;
+
+    mpack_reader_t reader;
+
+    mpack_reader_init_data(
+        &reader,
+        RawBufferData(r->parameters),
+        RawBufferLen(r->parameters)
+    );
+
+    uint32_t count = mpack_expect_array(&reader);
+
+    if (index >= count) {
+        mpack_reader_destroy(&reader);
+        return false;
+    }
+
+    for (uint32_t i = 0; i < index; i++) {
+        mpack_discard(&reader);
+    }
+
+    mpack_tag_t tag = mpack_peek_tag(&reader);
+
+    bool result = false;
+
+    switch (type) {
+        case PARAM_STR:
+            result = tag.type == mpack_type_str;
+            break;
+
+        case PARAM_INT:
+            result = tag.type == mpack_type_int;
+            break;
+
+        case PARAM_UINT:
+            result = tag.type == mpack_type_uint;
+            break;
+
+        case PARAM_BOOL:
+            result = tag.type == mpack_type_bool;
+            break;
+
+        case PARAM_FLOAT:
+            result = tag.type == mpack_type_float;
+            break;
+
+        case PARAM_DOUBLE:
+            result = tag.type == mpack_type_double;
+            break;
+
+        case PARAM_ARRAY:
+            result = tag.type == mpack_type_array;
+            break;
+
+        case PARAM_MAP:
+            result = tag.type == mpack_type_map;
+            break;
+
+        case PARAM_NIL:
+            result = tag.type == mpack_type_nil;
+            break;
+
+        default:
+            result = false;
+            break;
+    }
+
+    mpack_reader_destroy(&reader);
+
+    return result;
 }

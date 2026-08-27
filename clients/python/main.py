@@ -49,6 +49,7 @@ class AudioClient:
 
 
 async def main():
+    print("starting audio client")
     client = AudioClient()
 
     await client.connect()

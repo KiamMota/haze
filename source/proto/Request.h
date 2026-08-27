@@ -43,7 +43,22 @@ static inline const char* RequestMethod(const Request *r) {
 
 void RequestFree(Request **request);
 
-int RequestParamCount(Request* r);
-bool RequestParamIsString(Request* r, uint32_t index);
+int RequestParamCount(const Request* r);
+
+typedef enum {
+    PARAM_UND = 0,
+    PARAM_NIL,
+    PARAM_BOOL,
+    PARAM_INT,
+    PARAM_UINT,
+    PARAM_FLOAT,
+    PARAM_DOUBLE,
+    PARAM_STR,
+    PARAM_BIN,
+    PARAM_ARRAY,
+    PARAM_MAP,
+} ParamType;
+
+bool RequestParamIsType(const Request* r, ParamType type, uint32_t index);
 
 #endif

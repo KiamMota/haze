@@ -27,16 +27,18 @@ Response *HazeFuncSessionCreate(Request *rq)
         );
     }
 
+    uint32_t msg_id = RequestMsgId(rq);
+
     if (RequestParamCount(rq) != 1) {
         return ResponseCreateStrResult(
-            RequestMsgId(rq),
+            msg_id,
             "Invalid parameter count. Expected 1 parameter."
         );
     }
 
-    if (!RequestParamIsString(rq, 0)) {
+    if (!RequestParamIsType(rq, PARAM_STR, 0)) {
         return ResponseCreateStrResult(
-            RequestMsgId(rq),
+            msg_id,
             "Invalid parameter type. Expected a string."
         );
     }
@@ -44,7 +46,7 @@ Response *HazeFuncSessionCreate(Request *rq)
     Result res = SessionInit();
 
     return ResponseCreateStrResult(
-        RequestMsgId(rq),
+        msg_id,
         res.msg
     );
 }
