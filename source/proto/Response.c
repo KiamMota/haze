@@ -75,12 +75,19 @@ RawBuffer *ResponseMarshal(Response *s) {
 }
 
 bool ResponseFree(Response **response) {
-  if (!response || !*response)
-    return false;
+    if (!response || !*response)
+        return false;
 
-  free(*response);
-  *response = NULL;
-  return true;
+    if ((*response)->error)
+        RawBufferFree(&(*response)->error);
+
+    if ((*response)->result)
+        RawBufferFree(&(*response)->result);
+
+    free(*response);
+    *response = NULL;
+
+    return true;
 }
 
 bool ResponseSetError(Response *s, MpackRPCError err) {

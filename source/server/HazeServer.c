@@ -75,24 +75,38 @@ static void haze_on_write_done(uv_write_t *req, int status) {
 }
 
 void haze_send(uv_stream_t *stream, const void *data, size_t len) {
-  haze_write_req_t *req = malloc(sizeof(haze_write_req_t));
-  if (!req)
-    return;
+    haze_write_req_t *req = malloc(sizeof(*req));
+    if (!req)
+        return;
 
-  void *data_copy = malloc(len);
-  if (!data_copy) {
-    free(req);
-    return;
-  }
-  memcpy(data_copy, data, len);
+    void *data_copy = malloc(len);
+    if (!data_copy) {
+        free(req);
+        return;
+    }
 
-  req->data_to_free = data_copy;
-  req->stream = stream;
-  
-  uv_buf_t buf = uv_buf_init((char *)data_copy, (unsigned int)len);
+    memcpy(data_copy, data, len);
 
-  // NOTA: uv_read_stop(stream) foi REMOVIDO. O stream deve continuar lendo.
-  uv_write((uv_write_t *)req, stream, &buf, 1, haze_on_write_done);
+    req->data_to_free = data_copy;
+    req->stream = stream;
+
+    uv_buf_t buf = uv_buf_init(
+        (char *)data_copy,
+        (unsigned int)len
+    );
+
+    int rc = uv_write(
+        (uv_write_t *)req,
+        stream,
+        &buf,
+        1,
+        haze_on_write_done
+    );
+
+    if (rc < 0) {
+        free(req->data_to_free);
+        free(req);
+    }
 }
 
 static void haze_on_read(uv_stream_t *stream, ssize_t nread,
@@ -139,10 +153,7 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     Request *request = RequestUnmarshal(&recv);
 
     if (!request) {
-      // Como não sabemos se é malformado ou apenas incompleto, 
-      // paramos o processamento e esperamos mais dados na próxima leitura.
-      
-      // Proteção contra requisições gigantes ou garbage contínuo:
+
       if (conn->buffer_len > 4 * 1024 * 1024) { // Limite de 4MB
          HazeLogWarn("Buffer capacity exceeded 4MB, potential malformed stream. Closing.");
          uv_close((uv_handle_t *)stream, haze_on_close);
@@ -150,7 +161,6 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
       break; 
     }
 
-    // Processa a requisição válida
     Response *response = HazeServerDispatch(request);
     if (response) {
       RawBuffer *sendResponse = ResponseMarshal(response);
@@ -160,19 +170,9 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
       }
       ResponseFree(&response);
     }
+    RequestFree(&request);
     
-    // IMPORTANTE: Liberar o request (faltava na implementação original)
-    // Se o seu código original não tinha isso, garanta que a API tenha um free adequado
-    // RequestFree(&request); 
-
-    // 3. Descobre quantos bytes a requisição usou para remover do buffer
-    //
-    // ATENÇÃO AQUI: Você precisa adaptar esta linha para extrair 
-    // a quantidade de bytes lidos pelo parser. O parser MsgPack precisa avançar 
-    // um ponteiro ou manter um estado de 'consumido'.
-    // 
-    // Exemplo: size_t consumed = recv.offset;
-    size_t consumed = recv.len; // <- ADAPTE ISTO PARA A SUA STRUCT RawBuffer
+    size_t consumed = recv.len; 
 
     if (consumed == 0 || consumed > conn->buffer_len) {
         HazeLogError("Parser state invalid. Closing connection.");

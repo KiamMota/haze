@@ -10,8 +10,8 @@ from proto import Request, Response
 HOST = "127.0.0.1"
 PORT = 7193
 
-TOTAL_REQUESTS = 200_000
-CONCURRENCY = 500  # Número de conexões simultâneas (sockets abertos)
+TOTAL_REQUESTS = 10_000
+CONCURRENCY = 1000  # Número de conexões simultâneas (sockets abertos)
 
 METHOD = "session/create"
 PARAMS = ["benchmark"]

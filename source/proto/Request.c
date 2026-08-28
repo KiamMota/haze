@@ -433,8 +433,8 @@ Request *RequestUnmarshal(RawBuffer *b) {
 
       mpack_read_bytes(&reader, buff, len);
       buff[len] = '\0';
-
       RequestParamAppend(request, RequestParamInitStr(buff), i);
+      free(buff);
       break;
     }
 
@@ -445,6 +445,7 @@ Request *RequestUnmarshal(RawBuffer *b) {
       mpack_read_bytes(&reader, buff, len);
       RequestParamAppend(request, RequestParamInitBin(RawBufferNew(buff, len)),
                          i);
+      free(buff);
       break;
     }
 
