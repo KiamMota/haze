@@ -4,7 +4,7 @@ import msgpack
 
 
 class AudioClient:
-    def __init__(self, host="127.0.0.1", port=7192):
+    def __init__(self, host="127.0.0.1", port=7193):
         self.host = host
         self.port = port
         self.msg_id = 0

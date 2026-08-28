@@ -10,55 +10,74 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef enum {
+  PARAM_UND = 0,
+  PARAM_NIL,
+  PARAM_BOOL,
+  PARAM_INT,
+  PARAM_UINT,
+  PARAM_FLOAT,
+  PARAM_DOUBLE,
+  PARAM_STR,
+  PARAM_BIN,
+  PARAM_ARRAY,
+  PARAM_MAP,
+} RequestParamType;
 
 typedef struct {
-  mpack_reader_t reader; 
+  mpack_reader_t reader;
 } RequestReader;
+
+typedef union {
+  bool bool_value;
+  int64_t int_value;
+  uint64_t uint_value;
+  float float_value;
+  double double_value;
+  const char *str_value;
+  RawBuffer *bin_value;
+} RequestParamValue;
+
+typedef struct {
+  RequestParamType type;
+  RequestParamValue value;
+  size_t size;
+} RequestParam;
 
 typedef struct {
   HazeServerRPCType type;
   uint32_t msgid;
   char *method;
-  RawBuffer *parameters;
-  // RequestReader reader;
+  RequestParam **parameters;
 } Request;
-
+RequestParam *RequestParamGet(const Request *rq, uint32_t index);
+bool RequestParamAppend(Request *rq, RequestParam *param, uint32_t ind);
+RequestParam* RequestParamNew(void);
+void RequestParamFree(RequestParam** r);
+RequestParam* RequestParamInitStr(const char *str);
+RequestParam* RequestParamInitInt(int value);
+RequestParam* RequestParamInitBool(bool value);
+RequestParam* RequestParamInitNil(void);
+RequestParam* RequestParamInitDouble(double f);
+RequestParam* RequestParamInitFloat(float f);
+RequestParam* RequestParamInitBin(void* buff, size_t len);
+static inline RequestParamType RequestParamTypeGet(const RequestParam* r) {
+  return r->type;
+}
 Request *RequestUnmarshal(RawBuffer *b);
-RawBuffer* RequestMarshal(Request* r);
+RawBuffer *RequestMarshal(Request *r);
+Request *RequestNew(void);
 
-Request *ServerRequestNew(void);
+void RequestSetMethod(Request *request, const char *method);
 
-void HazeServerRequestSetMethod(Request *request, const char *method);
-bool RequestSetParameters(Request *request, RawBuffer *b);
-
-static inline const RawBuffer* RequestParameters(const Request* r) {
-  return r->parameters;
-}
-static inline uint32_t RequestMsgId(const Request *r) {
-  return r->msgid;
-}
-static inline const char* RequestMethod(const Request *r) {
-  return r->method;
-}
+static inline uint32_t RequestMsgId(const Request *r) { return r->msgid; }
+static inline const char *RequestMethod(const Request *r) { return r->method; }
 
 void RequestFree(Request **request);
 
-int RequestParamCount(const Request* r);
+int RequestParamCount(const Request *r);
 
-typedef enum {
-    PARAM_UND = 0,
-    PARAM_NIL,
-    PARAM_BOOL,
-    PARAM_INT,
-    PARAM_UINT,
-    PARAM_FLOAT,
-    PARAM_DOUBLE,
-    PARAM_STR,
-    PARAM_BIN,
-    PARAM_ARRAY,
-    PARAM_MAP,
-} ParamType;
-
-bool RequestParamIsType(const Request* r, ParamType type, uint32_t index);
+bool RequestParamIsType(const Request *r, RequestParamType type,
+                        uint32_t index);
 
 #endif

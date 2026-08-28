@@ -38,6 +38,8 @@ static inline RawBuffer RawBufferInit(const void* data, size_t len)  {
  */
 void RawBufferFree(RawBuffer **bf);
 
+bool RawBufferAppend(RawBuffer*bf, void* data, size_t len);
+
 /**
  * @brief Returns the data stored in the buffer.
  *
