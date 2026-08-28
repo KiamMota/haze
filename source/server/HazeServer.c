@@ -21,33 +21,47 @@ typedef struct {
   uv_tcp_t handle;
   uv_buf_t buf;
 } HazeConn;
-typedef struct {
 
+typedef struct {
   uv_write_t req;
   void *data_to_free;
+  uv_stream_t *stream;
 } haze_write_req_t;
 
 static void haze_on_close(uv_handle_t *handle) {
   if (handle->data) {
-    free(handle->data);
-    handle->data = NULL;
+    HazeConn *conn = (HazeConn *)handle->data;
+    HazeLogDebug("Connection closed: %p", (void *)conn);
+    
+    handle->data = NULL; // Fazemos antes, enquanto a memória é nossa
+    free(conn);          // Agora sim, adeus
   }
-}
-
-static void haze_on_alloc(uv_handle_t *handle, size_t suggested,
+}static void haze_on_alloc(uv_handle_t *handle, size_t suggested,
                           uv_buf_t *buf) {
   (void)handle;
   buf->base = malloc(suggested);
   buf->len = buf->base ? (unsigned int)suggested : 0;
 }
+
+static void haze_on_read(uv_stream_t *stream, ssize_t nread,
+                         const uv_buf_t *buf);
+
 static void haze_on_write_done(uv_write_t *req, int status) {
   if (status < 0) {
     HazeLogWarn("Write error: %s", uv_strerror(status));
   }
+  
   haze_write_req_t *wr = (haze_write_req_t *)req;
+  
   if (wr->data_to_free) {
     free(wr->data_to_free);
   }
+  
+  if (wr->stream && !uv_is_closing((uv_handle_t *)wr->stream)) {
+    HazeLogDebug("Write done, server closing connection");
+    uv_close((uv_handle_t *)wr->stream, haze_on_close);
+  }
+  
   free(wr);
 }
 
@@ -56,8 +70,6 @@ void haze_send(uv_stream_t *stream, const void *data, size_t len) {
   if (!req)
     return;
 
-  // Duplica o buffer para garantir a validade dos dados durante o envio
-  // assíncrono
   void *data_copy = malloc(len);
   if (!data_copy) {
     free(req);
@@ -66,47 +78,45 @@ void haze_send(uv_stream_t *stream, const void *data, size_t len) {
   memcpy(data_copy, data, len);
 
   req->data_to_free = data_copy;
+  req->stream = stream;
+  
   uv_buf_t buf = uv_buf_init((char *)data_copy, (unsigned int)len);
 
+  HazeLogDebug("Sending %zu bytes, pausing reads", len);
+  // Pausa leitura para garantir que escrita completa antes de processar novo request
+  uv_read_stop(stream);
+  
   uv_write((uv_write_t *)req, stream, &buf, 1, haze_on_write_done);
 }
-
 static void haze_on_read(uv_stream_t *stream, ssize_t nread,
                          const uv_buf_t *buf) {
   if (nread < 0) {
-    if (nread != UV_EOF)
-      HazeLogWarn("Read error: %s", uv_strerror((int)nread));
+    if (nread != UV_EOF) {
+      HazeLogDebug("Client disconnected or error");
+    }
 
-    free(buf->base);
+    if (buf->base) free(buf->base);
     uv_close((uv_handle_t *)stream, haze_on_close);
     return;
   }
 
   if (nread == 0) {
-    free(buf->base);
+    if (buf->base) free(buf->base);
     return;
   }
 
   RawBuffer recv = RawBufferInit(buf->base, nread);
-
-  /*
-   * Transport layer:
-   * RawBuffer -> Request
-   */
-  HazeLogDebug("Deserializing incoming request...");
-
   Request *request = RequestUnmarshal(&recv);
+  printf("Received Request: ");
+  RequestPrint(request);
 
   if (!request) {
     HazeLogWarn("Failed to deserialize incoming request");
-    // so the request is invalid, then the server will 
-    // create a fallback response for it
     Response *error = ResponseNew();
     if (error) {
       ResponseSetMsgId(error, 0);
       ResponseSetError(error, MPACKRPC_MALFORMED_REQ);
 
-      // transform response in raw buffer -> send -> client
       RawBuffer *response = ResponseMarshal(error);
 
       if (response) {
@@ -117,56 +127,83 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
       ResponseFree(&error);
     }
 
-    goto cleanup;
-    // end here
+    // CORREÇÃO 1: Libera a memória se o request for inválido
+    if (buf->base) free(buf->base);
+    return;
   }
 
-
-  HazeLogDebug("%s", "Dispatching request...");
   Response *response = HazeServerDispatch(request);
+  HazeLogDebug("Dispatched request");
 
+  if (response) {
+    RawBuffer *sendResponse = ResponseMarshal(response);
 
-  if (!response) {
-    goto cleanup;
-  }
+    if (sendResponse) {
+      HazeLogDebug("Sending response bytes");
+      haze_send(stream, RawBufferData(sendResponse), RawBufferLen(sendResponse));
+      RawBufferFree(&sendResponse);
+    }
 
-  RawBuffer *sendResponse = ResponseMarshal(response);
-
-  if (!sendResponse) {
-    HazeLogError("Failed to serialize response");
     ResponseFree(&response);
-    goto cleanup;
   }
 
-  haze_send(stream, RawBufferData(sendResponse), RawBufferLen(sendResponse));
-
-  RawBufferFree(&sendResponse);
-  ResponseFree(&response);
-
-cleanup:
-  free(buf->base);
+  // CORREÇÃO 2: Libera a memória após o sucesso (já processamos o request)
+  if (buf->base) free(buf->base);
   return;
 }
 
 static void haze_on_connect(uv_stream_t *server, int status) {
   if (status < 0) {
-    HazeLogError("[haze] connect error: %s\n", uv_strerror(status));
-    fflush(stdout);
+    HazeLogError("connect error: %s", uv_strerror(status));
     return;
   }
 
-  HazeLogDebug("%s", "New Connection\n");
+  HazeLogDebug("1. New Connection");
+
   HazeConn *conn = calloc(1, sizeof(HazeConn));
+  HazeLogDebug("2. calloc: %p", (void *)conn);
+
   if (!conn)
     return;
 
-  uv_tcp_init(server->loop, &conn->handle);
+  HazeLogDebug("3. before uv_tcp_init");
+
+  int init_ret = uv_tcp_init(server->loop, &conn->handle);
+
+  HazeLogDebug("4. after uv_tcp_init: %d", init_ret);
+
+  if (init_ret != 0) {
+    free(conn);
+    return;
+  }
+
   conn->handle.data = conn;
 
-  if (uv_accept(server, (uv_stream_t *)&conn->handle) == 0) {
-    uv_read_start((uv_stream_t *)&conn->handle, haze_on_alloc, haze_on_read);
-  } else {
+  HazeLogDebug("5. before uv_accept");
+
+  int accept_ret =
+      uv_accept(server, (uv_stream_t *)&conn->handle);
+
+  HazeLogDebug("6. after uv_accept: %d", accept_ret);
+
+  if (accept_ret != 0) {
     uv_close((uv_handle_t *)&conn->handle, haze_on_close);
+    return;
+  }
+
+  HazeLogDebug("7. before uv_read_start");
+
+  int read_ret =
+      uv_read_start(
+          (uv_stream_t *)&conn->handle,
+          haze_on_alloc,
+          haze_on_read);
+
+  HazeLogDebug("8. after uv_read_start: %d", read_ret);
+
+  if (read_ret != 0) {
+    uv_close((uv_handle_t *)&conn->handle, haze_on_close);
+    return;
   }
 }
 
@@ -179,7 +216,6 @@ HazeServer *HazeServerNew(const char *addr, uint16_t port) {
   if (!s)
     return NULL;
 
-  // Cria um loop dedicado para esta instância
   s->loop = uv_loop_new();
   s->port = port;
   s->addr = addr ? strdup(addr) : "127.0.0.1";
@@ -221,7 +257,6 @@ void HazeServerFree(HazeServer **s_ptr) {
     return;
   HazeServer *s = *s_ptr;
 
-  // Fecha o loop dedicado
   if (s->loop) {
     uv_loop_close(s->loop);
     free(s->loop);

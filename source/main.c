@@ -248,5 +248,7 @@ int main(int argc, char **argv) {
   }
 
   // Comportamento Padrão (Sem argumentos)
-  return ServerInit();
+  int v = ServerInit();
+  HazeLogError("HazeServerRun returned");
+  return v;
 }

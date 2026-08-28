@@ -30,60 +30,48 @@ bool ResponseSetResult(Response *s, void *data, size_t len) {
   return RawBufferSetData(s->result, data, len);
 }
 
-RawBuffer *ResponseMarshal(Response *s)
-{
-    if (!s)
-        return NULL;
+RawBuffer *ResponseMarshal(Response *s) {
+  if (!s)
+    return NULL;
 
-    char *data = NULL;
-    size_t size = 0;
+  char *data = NULL;
+  size_t size = 0;
 
-    mpack_writer_t writer;
-    mpack_writer_init_growable(&writer, &data, &size);
+  mpack_writer_t writer;
+  mpack_writer_init_growable(&writer, &data, &size);
 
-    mpack_start_array(&writer, 4);
+  mpack_start_array(&writer, 4);
 
-    mpack_write_u8(&writer, HAZE_RPC_RESPONSE);
-    mpack_write_u32(&writer, s->msgid);
+  mpack_write_u8(&writer, HAZE_RPC_RESPONSE);
+  mpack_write_u32(&writer, s->msgid);
 
-    if (s->error && RawBufferLen(s->error) > 0) {
-        mpack_write_str(
-            &writer,
-            RawBufferData(s->error),
-            RawBufferLen(s->error)
-        );
-    } else {
-        mpack_write_nil(&writer);
-    }
+  if (s->error && RawBufferLen(s->error) > 0) {
+    mpack_write_str(&writer, RawBufferData(s->error), RawBufferLen(s->error));
+  } else {
+    mpack_write_nil(&writer);
+  }
 
-    if (s->result && RawBufferLen(s->result) > 0) {
-        mpack_write_str(
-            &writer,
-            RawBufferData(s->result),
-            RawBufferLen(s->result)
-        );
-    } else {
-        mpack_write_nil(&writer);
-    }
+  if (s->result && RawBufferLen(s->result) > 0) {
+    mpack_write_str(&writer, RawBufferData(s->result), RawBufferLen(s->result));
+  } else {
+    mpack_write_nil(&writer);
+  }
 
-    mpack_finish_array(&writer);
+  mpack_finish_array(&writer);
 
-    mpack_error_t error = mpack_writer_destroy(&writer);
+  mpack_error_t error = mpack_writer_destroy(&writer);
 
-    if (error != mpack_ok) {
-        HazeLogError(
-            "ResponseMarshal failed: %s",
-            mpack_error_to_string(error)
-        );
+  if (error != mpack_ok) {
+    HazeLogError("ResponseMarshal failed: %s", mpack_error_to_string(error));
 
-        free(data);
-        return NULL;
-    }
-
-    RawBuffer *buffer = RawBufferNew(data, size);
     free(data);
+    return NULL;
+  }
 
-    return buffer;
+  RawBuffer *buffer = RawBufferNew(data, size);
+  free(data);
+
+  return buffer;
 }
 
 bool ResponseFree(Response **response) {
@@ -297,7 +285,6 @@ fail:
 }
 
 Response *ResponseCreateStrResult(uint32_t msgid, const char *res) {
-  HazeLogDebug("ResponseNew");
 
   Response *resp = ResponseNew();
 
@@ -305,14 +292,13 @@ Response *ResponseCreateStrResult(uint32_t msgid, const char *res) {
 
   ResponseSetResult(resp, (void *)res, strlen(res));
 
-  HazeLogDebug("ResponseCreateStrResult done");
-
   return resp;
 }
 Response *ResponseCreateError(uint32_t msgid, const char *err) {
   Response *resp = ResponseNew();
-  if (!resp) return NULL;
-  resp->type = HAZE_RPC_RESPONSE;   
+  if (!resp)
+    return NULL;
+  resp->type = HAZE_RPC_RESPONSE;
   resp->msgid = msgid;
   if (err)
     RawBufferSetData(resp->error, err, strlen(err));

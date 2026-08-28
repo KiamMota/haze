@@ -117,8 +117,10 @@ endif()
 # Teste proto
 # ============================================================
 add_executable(proto "${HAZE_TESTS_DIR}/proto.c")
+add_executable(response "${HAZE_TESTS_DIR}/response.c")
 
 target_link_libraries(proto PRIVATE haze_core)
+target_link_libraries(response PRIVATE haze_core)
 target_compile_definitions(proto PRIVATE _XOPEN_SOURCE=700)
 
 # ============================================================

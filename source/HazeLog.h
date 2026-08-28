@@ -47,11 +47,19 @@ static inline void _HazeLog(HazeLogLevel level, const char *file, int line,
   char timebuf[20];
   strftime(timebuf, sizeof(timebuf), "%H:%M:%S", tm);
 
-  // Adicionado .%03ld para exibir os milissegundos
+  // Extrai apenas o nome do arquivo, ignorando o caminho absoluto
+  const char *short_file = file;
+  for (const char *p = file; *p; ++p) {
+    if (*p == '/' || *p == '\\') {
+      short_file = p + 1;
+    }
+  }
+
+  // Agora usando short_file no lugar do file completo
   fprintf(stderr, "%s[%s.%03ld]%s [%s] %s(%s:%d)%s ", 
           HAZE_COLOR_GRAY, timebuf, ts.tv_nsec / 1000000, HAZE_COLOR_RESET, 
           _HazeLog_level_str(level), 
-          HAZE_COLOR_GRAY, file, line, HAZE_COLOR_RESET);
+          HAZE_COLOR_GRAY, short_file, line, HAZE_COLOR_RESET);
 
   va_list args;
   va_start(args, fmt);

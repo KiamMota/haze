@@ -65,6 +65,9 @@ RequestParam* RequestParamInitBin(RawBuffer* bf);
 static inline RequestParamType RequestParamTypeGet(const RequestParam* r) {
   return r->type;
 }
+static inline RequestParamValue RequestParamValueGet(const RequestParam* r) {
+  return r->value;
+}
 Request *RequestUnmarshal(RawBuffer *b);
 RawBuffer *RequestMarshal(Request *r);
 Request *RequestNew(void);
@@ -80,5 +83,7 @@ uint32_t RequestParamCount(const Request *r);
 
 bool RequestParamIsType(const Request *r, RequestParamType type,
                         uint32_t index);
+
+const char* RequestPrint(const Request* r);
 
 #endif

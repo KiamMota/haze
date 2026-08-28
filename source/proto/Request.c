@@ -546,3 +546,38 @@ bool RequestParamIsType(const Request *r, RequestParamType type,
 
   return RequestParamTypeGet(param) == type;
 }
+
+const char* RequestPrint(const Request *r) {
+  printf("[");
+  printf("%d, ", r->type);
+  printf("%u, ", r->msgid);
+  printf("\"%s\", [", r->method);
+
+  for (uint32_t i = 0; i < RequestParamCount(r); i++) {
+    RequestParam *param = r->parameters[i];
+    RequestParamValue value = RequestParamValueGet(param);
+
+    switch (RequestParamTypeGet(param)) {
+    case PARAM_INT:
+      printf("%d", value.int_value);
+      break;
+
+    case PARAM_STR:
+      printf("\"%s\"", value.str_value);
+      break;
+
+    case PARAM_BOOL:
+      printf("%s", value.bool_value ? "true" : "false");
+      break;
+
+    default:
+      printf("<unknown>");
+      break;
+    }
+
+    if (i + 1 < RequestParamCount(r))
+      printf(", ");
+  }
+
+  printf("]]\n");
+}
