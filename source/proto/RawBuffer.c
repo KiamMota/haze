@@ -39,7 +39,7 @@ void RawBufferFree(RawBuffer **b) {
 bool RawBufferAppend(RawBuffer *bf, void *data, size_t len) {
   if (!bf || !bf->data) return false;
   if (!len) return false;
-  void * new_data = realloc(bf->data, len);
+  void * new_data = realloc(bf->data, bf->len + len);
   bf->data = new_data;
   bf->len += len;
   memcpy((unsigned char *)bf->data + bf->len, data, len); 
