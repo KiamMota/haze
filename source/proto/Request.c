@@ -1,14 +1,15 @@
 #include "Request.h"
 #include "HazeLog.h"
 #include "HazeMacros.h"
+#include "audio/HazeEngine.h"
 #include "mpack/mpack-common.h"
 #include "mpack/mpack-expect.h"
 #include "mpack/mpack-platform.h"
 #include "mpack/mpack-reader.h"
 #include "mpack/mpack-writer.h"
+#include "proto/MessagePackRPC.h"
 #include "proto/RawBuffer.h"
 
-#include <bits/types/struct_sched_param.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -58,7 +59,13 @@ void RequestParamFree(RequestParam **r) {
 RequestParam *RequestParamGet(const Request *r, uint32_t ind) {
   if (!r || !r->parameters)
     return NULL;
-  return r->parameters[ind] ? r->parameters[ind] : NULL;
+  uint32_t i = 0;
+  while (r->parameters[i] != NULL) {
+    if (i == ind)
+      return r->parameters[i];
+    i++;
+  }
+  return NULL; // ind >= count ou hole
 }
 
 RequestParam *RequestParamInitStr(const char *str) {
@@ -119,14 +126,14 @@ RequestParam *RequestParamInitFloat(float f) {
   return param;
 }
 
-RequestParam *RequestParamInitBin(void *buff, size_t len) {
+RequestParam *RequestParamInitBin(RawBuffer *bf) {
   RequestParam *param = RequestParamNew();
 
-  RequestParamValue v = {.bin_value = buff};
+  RequestParamValue v = {.bin_value = (void *)RawBufferData(bf)};
 
   param->type = PARAM_BIN;
   param->value = v;
-  param->size = len;
+  param->size = RawBufferLen(bf);
 
   return param;
 }
@@ -342,6 +349,7 @@ Request *RequestUnmarshal(RawBuffer *b) {
     request->msgid = (uint32_t)mpack_tag_int_value(&tag);
 
   /*Method */
+
   tag = mpack_read_tag(&reader);
   if (mpack_tag_type(&tag) != mpack_type_str) {
     HazeLogError("Unmarshal failed [Method]: Expected STR, got %s",
@@ -349,12 +357,25 @@ Request *RequestUnmarshal(RawBuffer *b) {
     goto fail;
   }
 
+  // this method does not take ownership of the memory.
   uint32_t method_len = mpack_tag_str_length(&tag);
-  const char *method = mpack_read_bytes_inplace(&reader, method_len);
-  char *method_copy = malloc(method_len + 1);
-  memcpy(method_copy, method, method_len);
+  const char *method_bytes = mpack_read_bytes_inplace(&reader, method_len);
+  if (!method_bytes) {
+    goto fail;
+  }
+
+  char *method_copy = malloc((size_t)method_len + 1);
+  if (!method_copy) {
+    goto fail;
+  }
+  memcpy(method_copy, method_bytes, method_len);
   method_copy[method_len] = '\0';
+
   RequestSetMethod(request, method_copy);
+  free(method_copy); // SetMethod copia de novo internamente
+
+  mpack_done_str(&reader);
+
   mpack_done_str(&reader);
 
   /* Params */
@@ -421,11 +442,9 @@ Request *RequestUnmarshal(RawBuffer *b) {
       size_t len = mpack_tag_bin_length(&type_element);
 
       void *buff = malloc(len);
-
       mpack_read_bytes(&reader, buff, len);
-
-      RequestParamAppend(request, RequestParamInitBin(buff, len), i);
-
+      RequestParamAppend(request, RequestParamInitBin(RawBufferNew(buff, len)),
+                         i);
       break;
     }
 
@@ -434,8 +453,8 @@ Request *RequestUnmarshal(RawBuffer *b) {
     }
   }
 
-  mpack_discard(&reader);
   mpack_done_array(&reader);
+  mpack_discard(&reader);
   mpack_reader_destroy(&reader);
   return request;
 
@@ -463,12 +482,13 @@ void RequestSetMethod(Request *request, const char *method) {
   if (!method)
     return;
 
-  request->method = malloc(strlen(method) + 1);
+  size_t meth_len = strlen(method);
+  char *temp = malloc(meth_len + 1);
+  if (!temp)
+    return; // Proteção contra falha de malloc antes de qualquer escrita
 
-  if (!request->method)
-    return;
-
-  strcpy(request->method, method);
+  strcpy(temp, method);
+  request->method = temp;
 }
 
 void RequestFree(Request **request) {
@@ -498,7 +518,7 @@ void RequestFree(Request **request) {
   *request = NULL;
 }
 
-int RequestParamCount(const Request *r) {
+uint32_t RequestParamCount(const Request *r) {
   if (!r || !r->parameters)
     return 0;
 
@@ -508,7 +528,6 @@ int RequestParamCount(const Request *r) {
     i++;
   }
 
-
   return (int)i;
 }
 
@@ -516,7 +535,14 @@ bool RequestParamIsType(const Request *r, RequestParamType type,
                         uint32_t index) {
   if (!r || !r->parameters)
     return false;
-  if (!r->parameters[index])
+
+  if (index >= (uint32_t)RequestParamCount(r))
     return false;
-  return RequestParamTypeGet(r->parameters[index]) == type ? true : false;
+
+  RequestParam *param = r->parameters[index];
+
+  if (!param)
+    return false;
+
+  return RequestParamTypeGet(param) == type;
 }

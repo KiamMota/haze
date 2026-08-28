@@ -50,6 +50,7 @@ typedef struct {
   char *method;
   RequestParam **parameters;
 } Request;
+
 RequestParam *RequestParamGet(const Request *rq, uint32_t index);
 bool RequestParamAppend(Request *rq, RequestParam *param, uint32_t ind);
 RequestParam* RequestParamNew(void);
@@ -60,7 +61,7 @@ RequestParam* RequestParamInitBool(bool value);
 RequestParam* RequestParamInitNil(void);
 RequestParam* RequestParamInitDouble(double f);
 RequestParam* RequestParamInitFloat(float f);
-RequestParam* RequestParamInitBin(void* buff, size_t len);
+RequestParam* RequestParamInitBin(RawBuffer* bf);
 static inline RequestParamType RequestParamTypeGet(const RequestParam* r) {
   return r->type;
 }
@@ -75,7 +76,7 @@ static inline const char *RequestMethod(const Request *r) { return r->method; }
 
 void RequestFree(Request **request);
 
-int RequestParamCount(const Request *r);
+uint32_t RequestParamCount(const Request *r);
 
 bool RequestParamIsType(const Request *r, RequestParamType type,
                         uint32_t index);
