@@ -147,7 +147,6 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     ResponseFree(&response);
   }
 
-  // CORREÇÃO 2: Libera a memória após o sucesso (já processamos o request)
   if (buf->base) free(buf->base);
   return;
 }
@@ -158,19 +157,16 @@ static void haze_on_connect(uv_stream_t *server, int status) {
     return;
   }
 
-  HazeLogDebug("1. New Connection");
+  HazeLogDebug("New Connection");
 
   HazeConn *conn = calloc(1, sizeof(HazeConn));
-  HazeLogDebug("2. calloc: %p", (void *)conn);
 
   if (!conn)
     return;
 
-  HazeLogDebug("3. before uv_tcp_init");
 
   int init_ret = uv_tcp_init(server->loop, &conn->handle);
 
-  HazeLogDebug("4. after uv_tcp_init: %d", init_ret);
 
   if (init_ret != 0) {
     free(conn);
@@ -179,19 +175,16 @@ static void haze_on_connect(uv_stream_t *server, int status) {
 
   conn->handle.data = conn;
 
-  HazeLogDebug("5. before uv_accept");
 
   int accept_ret =
       uv_accept(server, (uv_stream_t *)&conn->handle);
 
-  HazeLogDebug("6. after uv_accept: %d", accept_ret);
 
   if (accept_ret != 0) {
     uv_close((uv_handle_t *)&conn->handle, haze_on_close);
     return;
   }
 
-  HazeLogDebug("7. before uv_read_start");
 
   int read_ret =
       uv_read_start(
@@ -199,7 +192,6 @@ static void haze_on_connect(uv_stream_t *server, int status) {
           haze_on_alloc,
           haze_on_read);
 
-  HazeLogDebug("8. after uv_read_start: %d", read_ret);
 
   if (read_ret != 0) {
     uv_close((uv_handle_t *)&conn->handle, haze_on_close);
