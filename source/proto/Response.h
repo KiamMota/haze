@@ -35,6 +35,6 @@ bool ResponseSetMsgId(Response *s, uint32_t msgid);
 bool ResponseSetResult(Response *s,  void* data, size_t len);
 
 Response* ResponseCreateStrResult(uint32_t msgid, const char* result);
-Response* ResponseCreateStrError(uint32_t msgid, const char* error);
+Response* ResponseCreateError(uint32_t msgid, const char* err);
 
 #endif

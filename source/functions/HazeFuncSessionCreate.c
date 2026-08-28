@@ -20,33 +20,27 @@ static Result SessionInit(void)
 
 Response *HazeFuncSessionCreate(Request *rq)
 {
-    if (!rq) {
-        return ResponseCreateStrResult(
-            0,
-            "Invalid request."
-        );
-    }
+    if (!rq)
+        return ResponseCreateError(0, "Invalid request.");
 
     uint32_t msg_id = RequestMsgId(rq);
 
-    if (RequestParamCount(rq) != 1) {
-        return ResponseCreateStrResult(
-            msg_id,
-            "Invalid parameter count. Expected 1 parameter."
-        );
-    }
+    if (RequestParamCount(rq) != 1)
+        return ResponseCreateError(msg_id, "Expected 1 string parameter.");
 
-    if (!RequestParamIsType(rq, PARAM_STR, 0)) {
-        return ResponseCreateStrResult(
-            msg_id,
-            "Invalid parameter type. Expected a string."
-        );
-    }
+    if (!RequestParamIsType(rq, PARAM_STR, 0))
+        return ResponseCreateError(msg_id, "Expected a string parameter.");
 
-    Result res = SessionInit();
+    RequestParam *p = RequestParamGet(rq, 0);
+    const char *name = p ? p->value.str_value : NULL;  /* ou ignore se não usar */
 
-    return ResponseCreateStrResult(
-        msg_id,
-        res.msg
-    );
+    if (SessionInstance != NULL)
+        return ResponseCreateError(msg_id, "Session already exists.");
+        /* ou ResponseCreateStrResult se quiser idempotente */
+
+    SessionInstance = SessionNew(name);  /* ou SessionNew(NULL) se name não importa */
+    if (!SessionInstance)
+        return ResponseCreateError(msg_id, "Failed to create session.");
+
+    return ResponseCreateStrResult(msg_id, "Session created successfully.");
 }

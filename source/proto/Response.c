@@ -309,6 +309,12 @@ Response *ResponseCreateStrResult(uint32_t msgid, const char *res) {
 
   return resp;
 }
-Response *ResponseCreateStrError(uint32_t msgid, const char *err) {
+Response *ResponseCreateError(uint32_t msgid, const char *err) {
   Response *resp = ResponseNew();
+  if (!resp) return NULL;
+  resp->type = HAZE_RPC_RESPONSE;   
+  resp->msgid = msgid;
+  if (err)
+    RawBufferSetData(resp->error, err, strlen(err));
+  return resp;
 }
