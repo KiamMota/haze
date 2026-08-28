@@ -34,30 +34,36 @@ static const char *session_name_random(void) {
 }
 
 Session *SessionNew(const char *session_name) {
-  Session *s = (Session *)malloc(sizeof(Session));
-  s->working_time = time(NULL);
-  s->session_name = malloc(sizeof(char *));
-  // no project path yet.
-  s->project_path = NULL;
-  if (session_name == NULL) {
-    s->session_name = strdup(session_name_random());
-  } else {
-    s->session_name = strdup(session_name);
-  }
-  return s;
+    Session *s = malloc(sizeof(Session));
+
+    if (!s)
+        return NULL;
+
+    s->created_at = time(NULL);
+    s->project_path = NULL;
+
+    if (session_name == NULL)
+        s->session_name = session_name_random();
+    else
+        s->session_name = strdup(session_name);
+
+    return s;
 }
 
-bool SessionSetName(Session *s, const char *SessionName) {
-  int max_name_len = 255;
-  if (!s || !s->session_name || !SessionName) {
-    return false;
-  }
+bool SessionSetName(Session *s, const char *name) {
+    if (!s || !name)
+        return false;
 
-  if (strlen(SessionName) >= max_name_len) {
-    return false;
-  }
+    if (strlen(name) >= 255)
+        return false;
 
-  snprintf(s->session_name, max_name_len, "%s", SessionName);
+    char *new_name = strdup(name);
 
-  return true;
+    if (!new_name)
+        return false;
+
+    free(s->session_name);
+    s->session_name = new_name;
+
+    return true;
 }

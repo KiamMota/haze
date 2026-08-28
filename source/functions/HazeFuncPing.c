@@ -4,8 +4,5 @@
 
 Response *HazeFuncPing(Request *req)
 {
-    Response *res = ResponseNew();
-    ResponseSetMsgId(res, req->msgid);
-    ResponseSetResult(res, "pong", 4);
-    return res;
+    return ResponseCreateStrResult(RequestMsgId(req), "pong!");
 }

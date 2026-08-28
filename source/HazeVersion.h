@@ -5,6 +5,6 @@
 #define HAZE_VERSION_MINOR 1
 #define HAZE_VERSION_PATCH 0
 
-#define HAZE_VERSION_STR "0.1.0"
+#define HAZE_VERSION_STR "1.0.000"
 
 #endif

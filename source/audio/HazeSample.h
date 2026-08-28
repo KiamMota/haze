@@ -8,6 +8,7 @@
 
 EXPORT_CPP_BEGIN
 typedef struct {
+  uint64_t id;
   ma_sound handle;
   ma_decoder decoder;
   uint8_t *buf;

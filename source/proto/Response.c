@@ -23,11 +23,11 @@ Response *ResponseNew(void) {
 
   return response;
 }
-bool ResponseSetResult(Response *s, void *data, size_t len) {
+bool ResponseSetResult(Response *s, RawBuffer* bf) {
   if (!s)
     return false;
 
-  return RawBufferSetData(s->result, data, len);
+  return RawBufferSetData(s->result, RawBufferData(bf), RawBufferLen(bf));
 }
 
 RawBuffer *ResponseMarshal(Response *s) {
@@ -297,7 +297,7 @@ Response *ResponseCreateStrResult(uint32_t msgid, const char *res) {
 
   ResponseSetMsgId(resp, msgid);
 
-  ResponseSetResult(resp, (void *)res, strlen(res));
+  ResponseSetResult(resp, RawBufferNew(res, strlen(res)));
 
   return resp;
 }

@@ -32,7 +32,7 @@ static inline uint32_t ResponseMsgId(Response* r) {
 bool ResponseFree(Response **response);
 bool ResponseSetError(Response *s, MpackRPCError err);
 bool ResponseSetMsgId(Response *s, uint32_t msgid);
-bool ResponseSetResult(Response *s,  void* data, size_t len);
+bool ResponseSetResult(Response *s,  RawBuffer* bf);
 
 Response* ResponseCreateStrResult(uint32_t msgid, const char* result);
 Response* ResponseCreateError(uint32_t msgid, const char* err);
