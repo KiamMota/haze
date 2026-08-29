@@ -1,159 +1,91 @@
+# Session
 
-# SampleList Functions
+| Function                | Description                              |
+|-------------------------|------------------------------------------|
+| `session/create`        | Create a new session and make it active  |
+| `session/get_name`      | Get the name of the current session      |
+| `session/get_worktime`  | Get the total work time of the session   |
 
-## Functions
+---
 
-| Function                                 | Description                                       |
-| ---------------------------------------- | ------------------------------------------------- |
-| [`samplelist/import`](#samplelistimport) | Imports an audio sample into the current session. |
-| [`samplelist/delete`](#samplelistdelete) | Deletes an audio sample from the current session. |
-| [`samplelist/get`](#samplelistget)       | Retrieves an audio sample by name.                |
-| [`samplelist/list`](#samplelistlist)     | Lists all samples in the current session.         |
+## `session/create`
 
-
-## `samplelist/import`
-
-### Description
-
-Imports an audio sample into the current session's `SampleList`.
+Create a new session and set it as the active session.
 
 ### Parameters
 
-| Name   | Type     | Required | Description                                   |
-| ------ | -------- | -------- | --------------------------------------------- |
-| `file` | `string` | Yes      | Path or filename of the audio file to import. |
-
-### Request
-
-```text
-[1, <msgid>, "samplelist/import", ["rock_with_you.mp3"]]
-```
+| Name | Type   | Required | Description                          |
+|------|--------|----------|--------------------------------------|
+| name | string | no       | Session name (default: `"Untitled"`) |
 
 ### Returns
 
-**Type:** `null`
-
-Returns successfully when the sample is imported.
+`nil` on success.
 
 ### Errors
 
-| Error                          | Description                          |
-| ------------------------------ | ------------------------------------ |
-| `Expected a string parameter.` | The first parameter is not a string. |
-| `Invalid parameter object.`    | The parameter object is invalid.     |
-| `<Result message>`             | The sample could not be imported.    |
-
-
-## `samplelist/delete`
-
-### Description
-
-Deletes an audio sample from the current session's `SampleList`.
-
-### Parameters
-
-| Name   | Type     | Required | Description                   |
-| ------ | -------- | -------- | ----------------------------- |
-| `name` | `string` | Yes      | Name of the sample to delete. |
-
-### Request
-
-```text
-[1, <msgid>, "samplelist/delete", ["rock_with_you.mp3"]]
-```
-
-### Returns
-
-**Type:** `null`
-
-Returns successfully when the sample is deleted.
-
-### Errors
-
-| Error                          | Description                          |
-| ------------------------------ | ------------------------------------ |
-| `Expected a string parameter.` | The first parameter is not a string. |
-| `Invalid parameter object.`    | The parameter object is invalid.     |
-| `<Result message>`             | The sample could not be deleted.     |
-
-
-## `samplelist/get`
-
-### Description
-
-Retrieves a sample from the current session's `SampleList` by name.
-
-### Parameters
-
-| Name   | Type     | Required | Description                     |
-| ------ | -------- | -------- | ------------------------------- |
-| `name` | `string` | Yes      | Name of the sample to retrieve. |
-
-### Request
-
-```text
-[1, <msgid>, "samplelist/get", ["rock_with_you.mp3"]]
-```
-
-### Returns
-
-**Type:** `string`
-
-Returns the name of the requested sample.
-
-### Errors
-
-| Error                          | Description                               |
-| ------------------------------ | ----------------------------------------- |
-| `Expected a string parameter.` | The first parameter is not a string.      |
-| `Invalid parameter object.`    | The parameter object is invalid.          |
-| `sample not found`             | No sample with the specified name exists. |
+| Code              | Meaning                          |
+|-------------------|----------------------------------|
+| SESSION_EXISTS    | A session with this name already exists |
+| CREATE_FAILED     | Could not create the session     |
 
 ### Example
 
-```text
-Request:
-[1, 67, "samplelist/get", ["rock_with_you.mp3"]]
-
-Response:
-[0, 67, nil, "rock_with_you.mp3"]
+```
+→ [0, 10, "session/create", ["My Project"]]
+← [1, 10, nil, nil]
 ```
 
+---
 
-## `samplelist/list`
+## `session/get_name`
 
-### Description
-
-Lists all samples currently stored in the current session's `SampleList`.
+Return the name of the current active session.
 
 ### Parameters
 
 None.
 
-### Request
-
-```text
-[1, <msgid>, "samplelist/list", []]
-```
-
 ### Returns
 
-**Type:** `string[]`
-
-An array containing the names of all samples in the current `SampleList`.
+`string` — current session name.
 
 ### Errors
 
-| Error                          | Description                                           |
-| ------------------------------ | ----------------------------------------------------- |
-| `failed to create sample list` | The server failed to create the list of sample names. |
+| Code              | Meaning                  |
+|-------------------|--------------------------|
+| SESSION_NOT_FOUND | No active session exists |
 
 ### Example
 
-```text
-Request:
-[1, 67, "samplelist/list", []]
+```
+→ [0, 11, "session/get_name", []]
+← [1, 11, nil, "My Project"]
+```
 
-Response:
-[0, 67, nil, ["foo", "foo2", "foo3"]]
+---
+
+## `session/get_worktime`
+
+Return the total work time of the current session in seconds.
+
+### Parameters
+
+None.
+
+### Returns
+
+`integer` — total work time in seconds.
+
+### Errors
+
+| Code              | Meaning                  |
+|-------------------|--------------------------|
+| SESSION_NOT_FOUND | No active session exists |
+
+### Example
+
+```
+→ [0, 12, "session/get_worktime", []]
+← [1, 12, nil, 3720]
 ```
