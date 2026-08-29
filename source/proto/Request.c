@@ -69,28 +69,42 @@ RequestParam *RequestParamGet(const Request *r, uint32_t ind) {
 }
 
 RequestParam *RequestParamInitStr(const char *str) {
+  if (!str)
+    return NULL;
+
   RequestParam *param = RequestParamNew();
+  if (!param)
+    return NULL;
+
   param->type = PARAM_STR;
   param->size = strlen(str);
-  RequestParamValue v = {.str_value = str};
-  param->value = v;
+  param->value.str_value = strdup(str);
+
+  if (!param->value.str_value) {
+    RequestParamFree(&param);
+    return NULL;
+  }
+
   return param;
 }
+
 RequestParam *RequestParamInitBool(bool value) {
   RequestParam *param = RequestParamNew();
-  RequestParamValue v = {.bool_value = value};
+
   param->type = PARAM_BOOL;
-  param->value = v;
+  param->value.bool_value = value;
   param->size = 1;
+
   return param;
 }
 
 RequestParam *RequestParamInitInt(int val) {
   RequestParam *param = RequestParamNew();
-  RequestParamValue v = {.int_value = val};
+
   param->type = PARAM_INT;
-  param->value = v;
+  param->value.int_value = val;
   param->size = 1;
+
   return param;
 }
 
@@ -102,13 +116,12 @@ RequestParam *RequestParamInitNil(void) {
 
   return param;
 }
+
 RequestParam *RequestParamInitDouble(double f) {
   RequestParam *param = RequestParamNew();
 
-  RequestParamValue v = {.double_value = f};
-
   param->type = PARAM_DOUBLE;
-  param->value = v;
+  param->value.double_value = f;
   param->size = 1;
 
   return param;
@@ -117,27 +130,39 @@ RequestParam *RequestParamInitDouble(double f) {
 RequestParam *RequestParamInitFloat(float f) {
   RequestParam *param = RequestParamNew();
 
-  RequestParamValue v = {.float_value = f};
-
   param->type = PARAM_FLOAT;
-  param->value = v;
+  param->value.float_value = f;
   param->size = 1;
 
   return param;
 }
 
 RequestParam *RequestParamInitBin(RawBuffer *bf) {
-  RequestParam *param = RequestParamNew();
+  if (!bf)
+    return NULL;
 
-  RequestParamValue v = {.bin_value = (void *)RawBufferData(bf)};
+  RequestParam *param = RequestParamNew();
+  if (!param)
+    return NULL;
+
+  size_t len = RawBufferLen(bf);
+
+  void *data = malloc(len);
+
+  if (len > 0 && !data) {
+    RequestParamFree(&param);
+    return NULL;
+  }
+
+  if (len > 0)
+    memcpy(data, RawBufferData(bf), len);
 
   param->type = PARAM_BIN;
-  param->value = v;
-  param->size = RawBufferLen(bf);
+  param->size = len;
+  param->value.bin_value = data;
 
   return param;
 }
-
 bool RequestParamAppend(Request *rq, RequestParam *param, uint32_t ind) {
   if (!rq || !rq->parameters || !param) {
     printf("param: %p\n", (void *)param);
@@ -376,8 +401,6 @@ Request *RequestUnmarshal(RawBuffer *b) {
 
   mpack_done_str(&reader);
 
-  mpack_done_str(&reader);
-
   /* Params */
 
   mpack_tag_t param_arr = mpack_read_tag(&reader);
@@ -548,7 +571,7 @@ bool RequestParamIsType(const Request *r, RequestParamType type,
   return RequestParamTypeGet(param) == type;
 }
 
-const char* RequestPrint(const Request *r) {
+const char *RequestPrint(const Request *r) {
   printf("[");
   printf("%d, ", r->type);
   printf("%u, ", r->msgid);

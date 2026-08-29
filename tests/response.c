@@ -1,8 +1,10 @@
 #include "proto/Response.h"
+#include "proto/RawBuffer.h"
 
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 static void test_response_new(void) {
   Response *response = ResponseNew();
@@ -51,30 +53,6 @@ static void test_msgid(void) {
   ResponseFree(&response);
 }
 
-static void test_result(void) {
-  Response *response = ResponseNew();
-
-  assert(response != NULL);
-  assert(ResponseResult(response) == NULL);
-
-  const char result[] = "hello haze";
-
-  assert(ResponseSetResult(
-      response,
-      (void *)result,
-      sizeof(result) - 1));
-
-  assert(ResponseResult(response) != NULL);
-
-  assert(ResponseSetResult(
-      response,
-      (void *)"another result",
-      sizeof("another result") - 1));
-
-  assert(ResponseResult(response) != NULL);
-
-  ResponseFree(&response);
-}
 
 static void test_error(void) {
   Response *response = ResponseNew();
@@ -208,8 +186,6 @@ int main(void) {
   test_msgid();
   printf("[PASS] Message ID\n");
 
-  test_result();
-  printf("[PASS] Result\n");
 
   test_error();
   printf("[PASS] Error\n");

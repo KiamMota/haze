@@ -3,71 +3,55 @@
 #include "Session.h"
 #include "proto/Request.h"
 #include "proto/Response.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 
-static Result SessionInit(void)
-{
-    if (SessionInstance == NULL) {
-        SessionInstance = SessionNew(NULL);
-        return ResultInit("Session created successfully.", true);
-    }
+static Result SessionInit(void) {
+  if (SessionInstance == NULL) {
+    SessionInstance = SessionNew(NULL);
+    return ResultInit("Session created successfully.", true);
+  }
 
-    return ResultInit(
-        "The current session instance has already been created.",
-        false
-    );
+  return ResultInit("The current session instance has already been created.",
+                    false);
 }
 
-Response *FnSessionCreate(Request *rq)
-{
-    if (!rq)
-        return ResponseCreateError(0, "Invalid request.");
+Response *FnSessionCreate(Request *rq) {
+  if (!rq)
+    return ResponseCreateError(0, "Invalid request.");
 
-    uint32_t msg_id = RequestMsgId(rq);
+  uint32_t msg_id = RequestMsgId(rq);
 
-    if (RequestParamCount(rq) != 1)
-        return ResponseCreateError(msg_id, "Expected 1 string parameter.");
+  if (RequestParamCount(rq) != 1)
+    return ResponseCreateError(msg_id, "Expected 1 string parameter.");
 
-    if (!RequestParamIsType(rq, PARAM_STR, 0))
-        return ResponseCreateError(msg_id, "Expected a string parameter.");
+  if (!RequestParamIsType(rq, PARAM_STR, 0))
+    return ResponseCreateError(msg_id, "Expected a string parameter.");
 
-    RequestParam *p = RequestParamGet(rq, 0);
-    const char *name = p ? p->value.str_value : NULL;  /* ou ignore se não usar */
-
-    if (SessionInstance != NULL)
-        return ResponseCreateError(msg_id, "Session already exists.");
-
-    SessionInstance = SessionNew(name);  /* ou SessionNew(NULL) se name não importa */
-    if (!SessionInstance)
-        return ResponseCreateError(msg_id, "Failed to create session.");
-
+  RequestParam *p = RequestParamGet(rq, 0);
+  if (!SessionInstance) {
+    SessionInstance = SessionNew(p->value.str_value);
     return ResponseCreateStrResult(msg_id, "Session created successfully.");
+  }
+  return ResponseCreateStrResult(msg_id, "Session already started!");
 }
 
-Response* FnSessionGetName(Request *rq) {
-  return ResponseCreateStrResult(RequestMsgId(rq), SessionGetName(SessionInstance));
-} 
+Response *FnSessionGetName(Request *rq) {
+  const char *name = SessionGetName(SessionInstance);
+  return ResponseCreateStrResult(RequestMsgId(rq), name);
+}
 
 Response *FnSessionGetWorktime(Request *rq) {
-    time_t seconds = SessionGetWorkingTime(SessionInstance);
+  time_t seconds = SessionGetWorkingTime(SessionInstance);
 
-    int hours = seconds / 3600;
-    int minutes = (seconds % 3600) / 60;
-    int secs = seconds % 60;
+  int hours = seconds / 3600;
+  int minutes = (seconds % 3600) / 60;
+  int secs = seconds % 60;
 
-    char worktime[32];
+  char worktime[32];
 
-    snprintf(
-        worktime,
-        sizeof(worktime),
-        "%02d:%02d:%02d",
-        hours,
-        minutes,
-        secs
-    );
+  snprintf(worktime, sizeof(worktime), "%02d:%02d:%02d", hours, minutes, secs);
 
-    return ResponseCreateStrResult(
-        RequestMsgId(rq),
-        worktime
-    );
+  return ResponseCreateStrResult(RequestMsgId(rq), worktime);
 }
-
