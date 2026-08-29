@@ -6,6 +6,27 @@ Haze separates the audio engine, project state, and file system from any particu
 
 ## Architecture
 
+``` mermaid
+graph TD;
+    Client["Client"];
+    RPC["MessagePack-RPC"];
+    Core["HazeCore"];
+    OS["OS<br/>Pipes · Files"];
+    Hardware["Hardware (Control)"];
+
+    Client <--> RPC;
+    RPC <--> Core;
+    Core <--> OS;
+    OS <--> Hardware;
+
+    Core --> Project["In-Memory Project State"];
+    Core --> File[".hz Project"];
+
+    Core -.->|Audio| Client;
+
+
+```
+
 ```
 Client  ←→  MessagePack-RPC  ←→  HazeCore  ←→  OS (pipes, files, hardware)
                                   │
