@@ -10,7 +10,6 @@
 | [`samplelist/get`](#samplelistget)       | Retrieves an audio sample by name.                |
 | [`samplelist/list`](#samplelistlist)     | Lists all samples in the current session.         |
 
----
 
 ## `samplelist/import`
 
@@ -44,7 +43,6 @@ Returns successfully when the sample is imported.
 | `Invalid parameter object.`    | The parameter object is invalid.     |
 | `<Result message>`             | The sample could not be imported.    |
 
----
 
 ## `samplelist/delete`
 
@@ -78,7 +76,6 @@ Returns successfully when the sample is deleted.
 | `Invalid parameter object.`    | The parameter object is invalid.     |
 | `<Result message>`             | The sample could not be deleted.     |
 
----
 
 ## `samplelist/get`
 
@@ -122,7 +119,6 @@ Response:
 [0, 67, nil, "rock_with_you.mp3"]
 ```
 
----
 
 ## `samplelist/list`
 
