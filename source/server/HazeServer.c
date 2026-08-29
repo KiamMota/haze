@@ -18,7 +18,7 @@
 typedef struct {
   uv_tcp_t handle;
   
-  // Buffer persistente para lidar com framings TCP
+  // Buffer persistente para lidar com framing TCP
   char *buffer;
   size_t buffer_len;
   size_t buffer_cap;
@@ -35,11 +35,10 @@ static void haze_on_close(uv_handle_t *handle) {
     HazeConn *conn = (HazeConn *)handle->data; 
     handle->data = NULL; 
     
-    // Limpa o buffer de framing da conexão
     if (conn->buffer) {
         free(conn->buffer);
     }
-    free(conn);          
+    free(conn);         
   }
 }
 
@@ -50,15 +49,11 @@ static void haze_on_alloc(uv_handle_t *handle, size_t suggested,
   buf->len = buf->base ? (unsigned int)suggested : 0;
 }
 
-static void haze_on_read(uv_stream_t *stream, ssize_t nread,
-                         const uv_buf_t *buf);
-
 static void haze_on_write_done(uv_write_t *req, int status) {
   haze_write_req_t *wr = (haze_write_req_t *)req;
 
   if (status < 0) {
     HazeLogWarn("Write error: %s", uv_strerror(status));
-    // Em caso de erro grave na escrita, encerramos a conexão persistente
     if (wr->stream && !uv_is_closing((uv_handle_t *)wr->stream)) {
       uv_close((uv_handle_t *)wr->stream, haze_on_close);
     }
@@ -69,7 +64,6 @@ static void haze_on_write_done(uv_write_t *req, int status) {
   }
   
   free(wr);
-  // NOTA: uv_close NÃO é mais chamado aqui em caso de sucesso.
 }
 
 void haze_send(uv_stream_t *stream, const void *data, size_t len) {
@@ -145,14 +139,14 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
   conn->buffer_len = new_len;
   if (buf->base) free(buf->base);
 
-  // 2. Tenta fazer parse de mensagens (pode haver várias ou nenhuma completa)
+  // 2. Tenta fazer o parse iterativo de mensagens no buffer
   while (conn->buffer_len > 0) {
     RawBuffer recv = RawBufferInit(conn->buffer, conn->buffer_len);
     Request *request = RequestUnmarshal(&recv);
 
+    // Mensagem incompleta, aguarda mais bytes do socket
     if (!request) {
-
-      if (conn->buffer_len > 4 * 1024 * 1024) { // Limite de 4MB
+      if (conn->buffer_len > 4 * 1024 * 1024) { // Limite de segurança: 4MB
          HazeLogWarn("Buffer capacity exceeded 4MB, potential malformed stream. Closing.");
          uv_close((uv_handle_t *)stream, haze_on_close);
       }
@@ -178,7 +172,7 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
         break;
     }
 
-    // 4. Desliza a memória restante para o começo do buffer (para ler a próxima RPC)
+    // 3. Desliza a memória restante para o começo do buffer
     conn->buffer_len -= consumed;
     if (conn->buffer_len > 0) {
         memmove(conn->buffer, conn->buffer + consumed, conn->buffer_len);
@@ -209,6 +203,9 @@ static void haze_on_connect(uv_stream_t *server, int status) {
     return;
   }
 
+  // ATIVAÇÃO DO NODELAY: Desativa o Algoritmo de Nagle para evitar o delay de 30ms em conexões persistentes
+  uv_tcp_nodelay(&conn->handle, 1);
+
   int read_ret = uv_read_start((uv_stream_t *)&conn->handle, haze_on_alloc, haze_on_read);
   if (read_ret != 0) {
     uv_close((uv_handle_t *)&conn->handle, haze_on_close);
@@ -226,8 +223,6 @@ HazeServer *HazeServerNew(const char *addr, uint16_t port) {
 
   s->loop = uv_loop_new();
   s->port = port;
-  
-  // Modificado para usar strdup sempre, evitando problemas no free()
   s->addr = strdup(addr ? addr : "127.0.0.1");
 
   uv_tcp_init(s->loop, &s->tcp);
@@ -244,7 +239,7 @@ int HazeServerStart(HazeServer *s) {
   int r = uv_tcp_bind(&s->tcp, (const struct sockaddr *)&bind_addr, 0);
   if (r != 0) return r;
 
-  r = uv_listen((uv_stream_t *)&s->tcp, 128, haze_on_connect);
+  r = uv_listen((uv_stream_t *)&s->tcp, 512, haze_on_connect);
   return r;
 }
 
@@ -267,7 +262,6 @@ void HazeServerFree(HazeServer **s_ptr) {
     free(s->loop);
   }
   
-  // Limpa o endereço que foi alocado com strdup
   if (s->addr) {
       free((void*)s->addr);
   }

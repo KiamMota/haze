@@ -338,12 +338,12 @@ Request *RequestUnmarshal(RawBuffer *b) {
       size_t len = mpack_tag_bin_length(&type_element);
       void *buff = malloc(len);
       mpack_read_bytes(&reader, buff, len);
-      
+
       Object *bin_obj = ObjectNew();
       bin_obj->type = OBJ_BIN;
       bin_obj->value.bin_value = RawBufferNew(buff, len);
       bin_obj->size = len;
-      
+
       RequestParamAppend(request, bin_obj, i);
       free(buff);
       break;
@@ -355,7 +355,12 @@ Request *RequestUnmarshal(RawBuffer *b) {
   }
 
   mpack_done_array(&reader);
-  mpack_discard(&reader);
+
+  /* Cálculo exato de bytes consumidos para avanço no buffer de streaming */
+  const char *remaining_data = NULL;
+  size_t remaining = mpack_reader_remaining(&reader, &remaining_data);
+  b->len = RawBufferLen(b) - remaining;
+
   mpack_reader_destroy(&reader);
   return request;
 
