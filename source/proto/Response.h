@@ -44,5 +44,6 @@ bool ResponseSetMsgId(Response *s, uint32_t msgid);
 Response *ResponseCreateStrResult(uint32_t msgid, const char *result);
 Response *ResponseCreateStrArrayResult(uint32_t msgid, const char **vec);
 Response *ResponseCreateError(uint32_t msgid, const char *err);
+Response* ResponseCreateNilResult(uint32_t msgid);
 
 #endif /* PROTO_RESPONSE_H */

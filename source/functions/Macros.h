@@ -19,7 +19,7 @@
         return NULL
 
 #define RETURN_SUCCESS \
-    return ResponseCreateStrResult(msgId, "ok")
+    return ResponseCreateNilResult(msgId)
 
 #define REQUIRE_ARGS(rq, n) \
     do { \

@@ -321,6 +321,7 @@ bool ResponseFree(Response **response) {
   return true;
 }
 
+
 Response *ResponseCreateStrResult(uint32_t msgid, const char *result) {
   Response *resp = ResponseNew();
   if (!resp)
@@ -380,4 +381,12 @@ Response *ResponseCreateStrArrayResult(uint32_t msgid, const char **values) {
   ResponseSetResultObject(resp, array_obj);
 
   return resp;
+}
+
+Response* ResponseCreateNilResult(uint32_t msgid) {
+  Response* resp = ResponseNew();
+  ResponseSetMsgId(resp, msgid);
+  ResponseSetResultObject(resp, ObjectCreateNil());
+  return resp; 
+
 }
