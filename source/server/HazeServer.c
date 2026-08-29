@@ -1,8 +1,6 @@
 #include "HazeServer.h"
 #include "HazeLog.h"
 #include "HazeServerDispatch.h"
-#include "HazeServerMiddleware.h"
-#include "proto/MessagePackRPC.h"
 #include "proto/RawBuffer.h"
 #include "proto/Request.h"
 #include "proto/Response.h"

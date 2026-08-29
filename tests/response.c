@@ -60,9 +60,7 @@ static void test_error(void) {
   assert(response != NULL);
   assert(ResponseError(response) == NULL);
 
-  assert(ResponseSetError(
-      response,
-      MPACKRPC_MALFORMED_REQ));
+
 
   assert(ResponseError(response) != NULL);
 

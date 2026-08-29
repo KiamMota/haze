@@ -3,7 +3,6 @@
 #include "HazeMacros.h"
 #include "audio/HazeEngine.h"
 #include "mpack/mpack-common.h"
-#include "mpack/mpack-expect.h"
 #include "mpack/mpack-platform.h"
 #include "mpack/mpack-reader.h"
 #include "mpack/mpack-writer.h"
@@ -15,10 +14,81 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+
+/* Helper estático para serializar recursivamente qualquer Object no MPack Writer */
+static void ObjectMarshalMPack(mpack_writer_t *writer, const Object *obj) {
+  if (!obj) {
+    mpack_write_nil(writer);
+    return;
+  }
+
+  switch (obj->type) {
+  case OBJ_NIL:
+    mpack_write_nil(writer);
+    break;
+
+  case OBJ_BOOL:
+    mpack_write_bool(writer, obj->value.bool_value);
+    break;
+
+  case OBJ_INT:
+    mpack_write_int(writer, obj->value.int_value);
+    break;
+
+  case OBJ_UINT:
+    mpack_write_uint(writer, obj->value.uint_value);
+    break;
+
+  case OBJ_FLOAT:
+    mpack_write_float(writer, obj->value.float_value);
+    break;
+
+  case OBJ_DOUBLE:
+    mpack_write_double(writer, obj->value.double_value);
+    break;
+
+  case OBJ_STR:
+    if (obj->value.str_value) {
+      mpack_write_str(writer, obj->value.str_value, (uint32_t)obj->size);
+    } else {
+      mpack_write_nil(writer);
+    }
+    break;
+
+  case OBJ_BIN:
+    if (obj->value.bin_value && RawBufferData(obj->value.bin_value)) {
+      mpack_write_bin(writer, (const char *)RawBufferData(obj->value.bin_value),
+                      (uint32_t)RawBufferLen(obj->value.bin_value));
+    } else {
+      mpack_write_nil(writer);
+    }
+    break;
+
+  case OBJ_ARRAY: {
+    ObjectArray *arr = obj->value.array_value;
+    if (!arr) {
+      mpack_write_nil(writer);
+      break;
+    }
+    size_t len = ObjectArrayLen(arr);
+    mpack_start_array(writer, (uint32_t)len);
+    for (size_t i = 0; i < len; i++) {
+      ObjectMarshalMPack(writer, ObjectArrayGet(arr, i));
+    }
+    mpack_finish_array(writer);
+    break;
+  }
+
+  case OBJ_UND:
+  default:
+    mpack_write_nil(writer);
+    break;
+  }
+}
 
 Request *RequestNew(void) {
   Request *request = calloc(1, sizeof(Request));
+  if (!request) return NULL;
 
   request->type = HAZE_RPC_REQUEST;
 
@@ -28,173 +98,61 @@ Request *RequestNew(void) {
     return NULL;
   }
 
-  request->parameters = malloc(sizeof(RequestParam *));
+  request->parameters = ObjectArrayCreate();
   if (!request->parameters) {
     free(request->method);
     free(request);
     return NULL;
   }
 
-  request->parameters[0] = NULL;
   return request;
 }
 
-RequestParam *RequestParamNew(void) {
-  RequestParam *param = malloc(sizeof(RequestParam));
-  param->size = 0;
-  param->type = PARAM_NIL;
-  RequestParamValue v = {.bin_value = 0};
-  param->value = v;
-  return param;
+Object *RequestParamNew(void) {
+  return ObjectNew();
 }
 
-void RequestParamFree(RequestParam **r) {
-  PTR_FREE_ASSERT(r);
-
-  (*r)->size = 0;
-  free((*r));
-  *r = NULL;
+void RequestParamFree(Object **r) {
+  ObjectFree(r);
 }
 
-RequestParam *RequestParamGet(const Request *r, uint32_t ind) {
+Object **RequestParamGet(const Request *r, uint32_t index) {
   if (!r || !r->parameters)
     return NULL;
-  uint32_t i = 0;
-  while (r->parameters[i] != NULL) {
-    if (i == ind)
-      return r->parameters[i];
-    i++;
-  }
-  return NULL; // ind >= count ou hole
-}
 
-RequestParam *RequestParamInitStr(const char *str) {
-  if (!str)
-    return NULL;
-
-  RequestParam *param = RequestParamNew();
-  if (!param)
-    return NULL;
-
-  param->type = PARAM_STR;
-  param->size = strlen(str);
-  param->value.str_value = strdup(str);
-
-  if (!param->value.str_value) {
-    RequestParamFree(&param);
-    return NULL;
+  /* Retorna o ponteiro para a posição no ObjectArray */
+  if (index < ObjectArrayLen(r->parameters)) {
+    return &r->parameters->objects[index];
   }
 
-  return param;
+  return NULL;
 }
 
-RequestParam *RequestParamInitBool(bool value) {
-  RequestParam *param = RequestParamNew();
-
-  param->type = PARAM_BOOL;
-  param->value.bool_value = value;
-  param->size = 1;
-
-  return param;
-}
-
-RequestParam *RequestParamInitInt(int val) {
-  RequestParam *param = RequestParamNew();
-
-  param->type = PARAM_INT;
-  param->value.int_value = val;
-  param->size = 1;
-
-  return param;
-}
-
-RequestParam *RequestParamInitNil(void) {
-  RequestParam *param = RequestParamNew();
-
-  param->type = PARAM_NIL;
-  param->size = 0;
-
-  return param;
-}
-
-RequestParam *RequestParamInitDouble(double f) {
-  RequestParam *param = RequestParamNew();
-
-  param->type = PARAM_DOUBLE;
-  param->value.double_value = f;
-  param->size = 1;
-
-  return param;
-}
-
-RequestParam *RequestParamInitFloat(float f) {
-  RequestParam *param = RequestParamNew();
-
-  param->type = PARAM_FLOAT;
-  param->value.float_value = f;
-  param->size = 1;
-
-  return param;
-}
-
-RequestParam *RequestParamInitBin(RawBuffer *bf) {
-  if (!bf)
-    return NULL;
-
-  RequestParam *param = RequestParamNew();
-  if (!param)
-    return NULL;
-
-  size_t len = RawBufferLen(bf);
-
-  void *data = malloc(len);
-
-  if (len > 0 && !data) {
-    RequestParamFree(&param);
-    return NULL;
-  }
-
-  if (len > 0)
-    memcpy(data, RawBufferData(bf), len);
-
-  param->type = PARAM_BIN;
-  param->size = len;
-  param->value.bin_value = data;
-
-  return param;
-}
-bool RequestParamAppend(Request *rq, RequestParam *param, uint32_t ind) {
+bool RequestParamAppend(Request *rq, Object *param, uint32_t ind) {
   if (!rq || !rq->parameters || !param) {
-    printf("param: %p\n", (void *)param);
-    printf("rq: %p\n", (void *)rq);
-    fflush(stdout);
     return false;
   }
 
-  if (rq->parameters[ind] != NULL) {
-    return false;
+  /* Se o índice for o próximo elemento da sequência, usamos o Append padrão */
+  if (ind == ObjectArrayLen(rq->parameters)) {
+    return ObjectArrayAppend(rq->parameters, param);
   }
 
-  int tamanho_antigo = RequestParamCount(rq);
-
-  RequestParam **new_params =
-      realloc(rq->parameters, sizeof(RequestParam *) * (ind + 2));
-
-  if (!new_params) {
-    return false; // Falha de memória (realloc retornou NULL)
+  /* Se o índice for menor que o tamanho atual, substitui */
+  if (ind < ObjectArrayLen(rq->parameters)) {
+    if (rq->parameters->objects[ind] != NULL) {
+      return false; // Evita sobrescrever parâmetros existentes sem liberar
+    }
+    rq->parameters->objects[ind] = param;
+    return true;
   }
 
-  rq->parameters = new_params;
-
-  for (uint32_t i = tamanho_antigo; i < ind; i++) {
-    rq->parameters[i] = NULL;
+  /* Preenche lacunas com OBJ_NIL caso o índice informado seja maior que a len */
+  while (ObjectArrayLen(rq->parameters) < ind) {
+    ObjectArrayAppend(rq->parameters, ObjectCreateNil());
   }
 
-  rq->parameters[ind] = param;
-
-  rq->parameters[ind + 1] = NULL;
-
-  return true;
+  return ObjectArrayAppend(rq->parameters, param);
 }
 
 RawBuffer *RequestMarshal(Request *request) {
@@ -213,80 +171,25 @@ RawBuffer *RequestMarshal(Request *request) {
     return NULL;
   }
 
-  /* array principal: [type, msgid, method, params] */
+  /* Array principal do MessagePack-RPC: [type, msgid, method, params] */
   mpack_start_array(&writer, 4);
 
   mpack_write_uint(&writer, (uint64_t)request->type);
   mpack_write_uint(&writer, (uint64_t)request->msgid);
 
   if (request->method) {
-    mpack_write_str(&writer, request->method,
-                    (uint32_t)strlen(request->method));
+    mpack_write_str(&writer, request->method, (uint32_t)strlen(request->method));
   } else {
     mpack_write_nil(&writer);
   }
 
-  /* sub-array de parâmetros */
-  int param_count = RequestParamCount(request);
-  mpack_start_array(&writer, (uint32_t)param_count);
+  /* Sub-array de parâmetros */
+  uint32_t param_count = RequestParamCount(request);
+  mpack_start_array(&writer, param_count);
 
-  for (int i = 0; i < param_count; i++) {
-    RequestParam *param = request->parameters[i];
-
-    if (param == NULL) {
-      mpack_write_nil(&writer);
-      continue;
-    }
-
-    switch (param->type) {
-    case PARAM_NIL:
-      mpack_write_nil(&writer);
-      break;
-
-    case PARAM_BOOL:
-      mpack_write_bool(&writer, param->value.bool_value);
-      break;
-
-    case PARAM_INT:
-      mpack_write_int(&writer, param->value.int_value);
-      break;
-
-    case PARAM_UINT:
-      mpack_write_uint(&writer, param->value.uint_value);
-      break;
-
-    case PARAM_FLOAT:
-      mpack_write_float(&writer, param->value.float_value);
-      break;
-
-    case PARAM_DOUBLE:
-      mpack_write_double(&writer, param->value.double_value);
-      break;
-
-    case PARAM_STR:
-      if (param->value.str_value) {
-        mpack_write_str(&writer, param->value.str_value, (uint32_t)param->size);
-      } else {
-        mpack_write_nil(&writer);
-      }
-      break;
-
-    case PARAM_BIN:
-      if (param->value.bin_value && param->value.bin_value->data) {
-        mpack_write_bin(&writer, (const char *)param->value.bin_value->data,
-                        (uint32_t)param->value.bin_value->len);
-      } else {
-        mpack_write_nil(&writer);
-      }
-      break;
-
-    case PARAM_ARRAY:
-    case PARAM_MAP:
-    case PARAM_UND:
-    default:
-      mpack_write_nil(&writer);
-      break;
-    }
+  for (uint32_t i = 0; i < param_count; i++) {
+    Object *param = ObjectArrayGet(request->parameters, i);
+    ObjectMarshalMPack(&writer, param);
   }
 
   mpack_finish_array(&writer); /* params */
@@ -320,18 +223,10 @@ Request *RequestUnmarshal(RawBuffer *b) {
   Request *request = NULL;
   mpack_tag_t tag;
 
-  /* Array */
+  /* Array de envelope */
   tag = mpack_read_tag(&reader);
-
-  if (mpack_tag_type(&tag) != mpack_type_array) {
-    HazeLogError("Unmarshal failed: Expected ARRAY, got %s",
-                 mpack_type_to_string(mpack_tag_type(&tag)));
-    goto fail;
-  }
-
-  if (mpack_tag_array_count(&tag) != 4) {
-    HazeLogError("Unmarshal failed: Expected 4 items, got %u",
-                 mpack_tag_array_count(&tag));
+  if (mpack_tag_type(&tag) != mpack_type_array || mpack_tag_array_count(&tag) != 4) {
+    HazeLogError("Unmarshal failed: Array de tamanho 4 esperado");
     goto fail;
   }
 
@@ -339,50 +234,32 @@ Request *RequestUnmarshal(RawBuffer *b) {
 
   /* Type */
   tag = mpack_read_tag(&reader);
-
-  if (mpack_tag_type(&tag) != mpack_type_uint &&
-      mpack_tag_type(&tag) != mpack_type_int) {
-    HazeLogError("Unmarshal failed [Type]: Expected INT/UINT, got %s",
-                 mpack_type_to_string(mpack_tag_type(&tag)));
-    goto fail;
-  }
-
   if (mpack_tag_type(&tag) == mpack_type_uint)
     request->type = (HazeServerRPCType)mpack_tag_uint_value(&tag);
-  else
+  else if (mpack_tag_type(&tag) == mpack_type_int)
     request->type = (HazeServerRPCType)mpack_tag_int_value(&tag);
+  else
+    goto fail;
 
   if (request->type != HAZE_RPC_REQUEST) {
-    HazeLogError("Unmarshal failed [Type]: Expected %d, got %d",
-                 HAZE_RPC_REQUEST, request->type);
     goto fail;
   }
 
   /* MsgID */
   tag = mpack_read_tag(&reader);
-
-  if (mpack_tag_type(&tag) != mpack_type_uint &&
-      mpack_tag_type(&tag) != mpack_type_int) {
-    HazeLogError("Unmarshal failed [MsgID]: Expected INT/UINT, got %s",
-                 mpack_type_to_string(mpack_tag_type(&tag)));
-    goto fail;
-  }
-
   if (mpack_tag_type(&tag) == mpack_type_uint)
     request->msgid = (uint32_t)mpack_tag_uint_value(&tag);
-  else
+  else if (mpack_tag_type(&tag) == mpack_type_int)
     request->msgid = (uint32_t)mpack_tag_int_value(&tag);
+  else
+    goto fail;
 
-  /*Method */
-
+  /* Method */
   tag = mpack_read_tag(&reader);
   if (mpack_tag_type(&tag) != mpack_type_str) {
-    HazeLogError("Unmarshal failed [Method]: Expected STR, got %s",
-                 mpack_type_to_string(mpack_tag_type(&tag)));
     goto fail;
   }
 
-  // this method does not take ownership of the memory.
   uint32_t method_len = mpack_tag_str_length(&tag);
   const char *method_bytes = mpack_read_bytes_inplace(&reader, method_len);
   if (!method_bytes) {
@@ -397,16 +274,13 @@ Request *RequestUnmarshal(RawBuffer *b) {
   method_copy[method_len] = '\0';
 
   RequestSetMethod(request, method_copy);
-  free(method_copy); // SetMethod copia de novo internamente
+  free(method_copy);
 
   mpack_done_str(&reader);
 
   /* Params */
-
   mpack_tag_t param_arr = mpack_read_tag(&reader);
-
   if (mpack_tag_type(&param_arr) != mpack_type_array) {
-    HazeLogError("%s", "Unmarshal failed [Params]: parameters is not array");
     goto fail;
   }
 
@@ -417,57 +291,60 @@ Request *RequestUnmarshal(RawBuffer *b) {
     switch (mpack_tag_type(&type_element)) {
 
     case mpack_type_nil:
-      RequestParamAppend(request, RequestParamInitNil(), i);
+      RequestParamAppend(request, ObjectCreateNil(), i);
       break;
 
     case mpack_type_bool: {
       bool v = mpack_tag_bool_value(&type_element);
-
-      RequestParamAppend(request, RequestParamInitBool(v), i);
+      RequestParamAppend(request, ObjectCreateBool(v), i);
       break;
     }
 
-    case mpack_type_int:
-    case mpack_type_uint: {
-      int v = mpack_tag_int_value(&type_element);
+    case mpack_type_int: {
+      int64_t v = mpack_tag_int_value(&type_element);
+      RequestParamAppend(request, ObjectCreateInt(v), i);
+      break;
+    }
 
-      RequestParamAppend(request, RequestParamInitInt(v), i);
+    case mpack_type_uint: {
+      uint64_t v = mpack_tag_uint_value(&type_element);
+      RequestParamAppend(request, ObjectCreateUInt(v), i);
       break;
     }
 
     case mpack_type_float: {
       float v = mpack_tag_float_value(&type_element);
-
-      RequestParamAppend(request, RequestParamInitFloat(v), i);
+      RequestParamAppend(request, ObjectCreateFloat(v), i);
       break;
     }
 
     case mpack_type_double: {
       double v = mpack_tag_double_value(&type_element);
-
-      RequestParamAppend(request, RequestParamInitDouble(v), i);
+      RequestParamAppend(request, ObjectCreateDouble(v), i);
       break;
     }
 
     case mpack_type_str: {
       size_t len = mpack_tag_str_length(&type_element);
-
       char *buff = malloc(len + 1);
-
       mpack_read_bytes(&reader, buff, len);
       buff[len] = '\0';
-      RequestParamAppend(request, RequestParamInitStr(buff), i);
+      RequestParamAppend(request, ObjectCreateStr(buff), i);
       free(buff);
       break;
     }
 
     case mpack_type_bin: {
       size_t len = mpack_tag_bin_length(&type_element);
-
       void *buff = malloc(len);
       mpack_read_bytes(&reader, buff, len);
-      RequestParamAppend(request, RequestParamInitBin(RawBufferNew(buff, len)),
-                         i);
+      
+      Object *bin_obj = ObjectNew();
+      bin_obj->type = OBJ_BIN;
+      bin_obj->value.bin_value = RawBufferNew(buff, len);
+      bin_obj->size = len;
+      
+      RequestParamAppend(request, bin_obj, i);
       free(buff);
       break;
     }
@@ -509,7 +386,7 @@ void RequestSetMethod(Request *request, const char *method) {
   size_t meth_len = strlen(method);
   char *temp = malloc(meth_len + 1);
   if (!temp)
-    return; // Proteção contra falha de malloc antes de qualquer escrita
+    return;
 
   strcpy(temp, method);
   request->method = temp;
@@ -525,17 +402,7 @@ void RequestFree(Request **request) {
   }
 
   if ((*request)->parameters) {
-    int count = RequestParamCount(*request);
-
-    if (count > 0) {
-      for (int i = 0; i < count; i++) {
-        if ((*request)->parameters[i]) {
-          RequestParamFree(&((*request)->parameters[i]));
-        }
-      }
-    }
-    free((*request)->parameters);
-    (*request)->parameters = NULL;
+    ObjectArrayFree(&((*request)->parameters));
   }
 
   free(*request);
@@ -546,25 +413,14 @@ uint32_t RequestParamCount(const Request *r) {
   if (!r || !r->parameters)
     return 0;
 
-  size_t i = 0;
-
-  while (r->parameters[i] != NULL) {
-    i++;
-  }
-
-  return (int)i;
+  return (uint32_t)ObjectArrayLen(r->parameters);
 }
 
-bool RequestParamIsType(const Request *r, RequestParamType type,
-                        uint32_t index) {
+bool RequestParamIsType(const Request *r, ObjectType type, uint32_t index) {
   if (!r || !r->parameters)
     return false;
 
-  if (index >= (uint32_t)RequestParamCount(r))
-    return false;
-
-  RequestParam *param = r->parameters[index];
-
+  Object *param = ObjectArrayGet(r->parameters, index);
   if (!param)
     return false;
 
@@ -572,36 +428,45 @@ bool RequestParamIsType(const Request *r, RequestParamType type,
 }
 
 const char *RequestPrint(const Request *r) {
-  printf("[");
-  printf("%d, ", r->type);
-  printf("%u, ", r->msgid);
-  printf("\"%s\", [", r->method);
+  if (!r) return "";
 
-  for (uint32_t i = 0; i < RequestParamCount(r); i++) {
-    RequestParam *param = r->parameters[i];
-    RequestParamValue value = RequestParamValueGet(param);
+  printf("[%d, %u, \"%s\", [", r->type, r->msgid, r->method ? r->method : "");
 
-    switch (RequestParamTypeGet(param)) {
-    case PARAM_INT:
-      printf("%d", value.int_value);
-      break;
-
-    case PARAM_STR:
-      printf("\"%s\"", value.str_value);
-      break;
-
-    case PARAM_BOOL:
-      printf("%s", value.bool_value ? "true" : "false");
-      break;
-
-    default:
-      printf("<unknown>");
-      break;
+  uint32_t count = RequestParamCount(r);
+  for (uint32_t i = 0; i < count; i++) {
+    Object *param = ObjectArrayGet(r->parameters, i);
+    if (!param) {
+      printf("null");
+    } else {
+      switch (RequestParamTypeGet(param)) {
+      case OBJ_INT:
+        printf("%ld", (long)param->value.int_value);
+        break;
+      case OBJ_UINT:
+        printf("%lu", (unsigned long)param->value.uint_value);
+        break;
+      case OBJ_STR:
+        printf("\"%s\"", param->value.str_value ? param->value.str_value : "");
+        break;
+      case OBJ_BOOL:
+        printf("%s", param->value.bool_value ? "true" : "false");
+        break;
+      case OBJ_FLOAT:
+        printf("%f", param->value.float_value);
+        break;
+      case OBJ_DOUBLE:
+        printf("%lf", param->value.double_value);
+        break;
+      default:
+        printf("<object type %d>", param->type);
+        break;
+      }
     }
 
-    if (i + 1 < RequestParamCount(r))
+    if (i + 1 < count)
       printf(", ");
   }
 
   printf("]]\n");
+  return "";
 }

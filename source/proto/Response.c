@@ -1,8 +1,11 @@
 #include "Response.h"
 #include "HazeLog.h"
+#include "mpack/mpack-common.h"
+#include "mpack/mpack-expect.h"
 #include "mpack/mpack-reader.h"
-#include "mpack/mpack.h"
+#include "mpack/mpack-writer.h"
 #include "proto/MessagePackRPC.h"
+#include "proto/Object.h"
 #include "proto/RawBuffer.h"
 
 #include <stddef.h>
@@ -10,24 +13,196 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Helper estático para serializar qualquer Object no MPack Writer */
+static void ObjectMarshalMPack(mpack_writer_t *writer, const Object *obj) {
+  if (!obj) {
+    mpack_write_nil(writer);
+    return;
+  }
+
+  switch (obj->type) {
+  case OBJ_NIL:
+    mpack_write_nil(writer);
+    break;
+
+  case OBJ_BOOL:
+    mpack_write_bool(writer, obj->value.bool_value);
+    break;
+
+  case OBJ_INT:
+    mpack_write_int(writer, obj->value.int_value);
+    break;
+
+  case OBJ_UINT:
+    mpack_write_uint(writer, obj->value.uint_value);
+    break;
+
+  case OBJ_FLOAT:
+    mpack_write_float(writer, obj->value.float_value);
+    break;
+
+  case OBJ_DOUBLE:
+    mpack_write_double(writer, obj->value.double_value);
+    break;
+
+  case OBJ_STR:
+    if (obj->value.str_value) {
+      mpack_write_str(writer, obj->value.str_value, (uint32_t)obj->size);
+    } else {
+      mpack_write_nil(writer);
+    }
+    break;
+
+  case OBJ_BIN:
+    if (obj->value.bin_value && RawBufferData(obj->value.bin_value)) {
+      mpack_write_bin(writer, (const char *)RawBufferData(obj->value.bin_value),
+                      (uint32_t)RawBufferLen(obj->value.bin_value));
+    } else {
+      mpack_write_nil(writer);
+    }
+    break;
+
+  case OBJ_ARRAY: {
+    ObjectArray *arr = obj->value.array_value;
+    if (!arr) {
+      mpack_write_nil(writer);
+      break;
+    }
+    size_t len = ObjectArrayLen(arr);
+    mpack_start_array(writer, (uint32_t)len);
+    for (size_t i = 0; i < len; i++) {
+      ObjectMarshalMPack(writer, ObjectArrayGet(arr, i));
+    }
+    mpack_finish_array(writer);
+    break;
+  }
+
+  case OBJ_UND:
+  default:
+    mpack_write_nil(writer);
+    break;
+  }
+}
+
+/* Helper estático para deserializar uma tag MPack para um Object */
+static Object *ObjectUnmarshalMPack(mpack_reader_t *reader) {
+  mpack_tag_t tag = mpack_read_tag(reader);
+  if (mpack_reader_error(reader) != mpack_ok) {
+    return NULL;
+  }
+
+  switch (mpack_tag_type(&tag)) {
+  case mpack_type_nil:
+    return ObjectCreateNil();
+
+  case mpack_type_bool:
+    return ObjectCreateBool(mpack_tag_bool_value(&tag));
+
+  case mpack_type_int:
+    return ObjectCreateInt(mpack_tag_int_value(&tag));
+
+  case mpack_type_uint:
+    return ObjectCreateUInt(mpack_tag_uint_value(&tag));
+
+  case mpack_type_float:
+    return ObjectCreateFloat(mpack_tag_float_value(&tag));
+
+  case mpack_type_double:
+    return ObjectCreateDouble(mpack_tag_double_value(&tag));
+
+  case mpack_type_str: {
+    uint32_t len = mpack_tag_str_length(&tag);
+    char *buff = malloc(len + 1);
+    if (!buff) return NULL;
+    mpack_read_bytes(reader, buff, len);
+    buff[len] = '\0';
+    mpack_done_str(reader);
+    Object *obj = ObjectCreateStr(buff);
+    free(buff);
+    return obj;
+  }
+
+  case mpack_type_bin: {
+    uint32_t len = mpack_tag_bin_length(&tag);
+    void *buff = malloc(len);
+    if (!buff) return NULL;
+    mpack_read_bytes(reader, buff, len);
+    mpack_done_bin(reader);
+
+    Object *obj = ObjectNew();
+    if (obj) {
+      obj->type = OBJ_BIN;
+      obj->value.bin_value = RawBufferNew(buff, len);
+      obj->size = len;
+    }
+    free(buff);
+    return obj;
+  }
+
+  case mpack_type_array: {
+    uint32_t count = mpack_tag_array_count(&tag);
+    ObjectArray *arr = ObjectArrayCreate();
+    for (uint32_t i = 0; i < count; i++) {
+      Object *child = ObjectUnmarshalMPack(reader);
+      if (child) {
+        ObjectArrayAppend(arr, child);
+      }
+    }
+    mpack_done_array(reader);
+
+    Object *obj = ObjectNew();
+    if (obj) {
+      obj->type = OBJ_ARRAY;
+      obj->value.array_value = arr;
+    }
+    return obj;
+  }
+
+  default:
+    return ObjectCreateNil();
+  }
+}
+
 Response *ResponseNew(void) {
   Response *response = calloc(1, sizeof(Response));
-
   if (!response)
     return NULL;
 
   response->type = HAZE_RPC_RESPONSE;
   response->msgid = 0;
-  response->error = RawBufferNew(NULL, 0);
-  response->result = RawBufferNew(NULL, 0);
+  response->error = NULL;
+  response->result = NULL;
 
   return response;
 }
-bool ResponseSetResult(Response *s, RawBuffer* bf) {
+
+bool ResponseSetResultObject(Response *s, Object *result) {
   if (!s)
     return false;
 
-  return RawBufferSetData(s->result, RawBufferData(bf), RawBufferLen(bf));
+  if (s->result) {
+    ObjectFree(&s->result);
+  }
+  s->result = result;
+  return true;
+}
+
+bool ResponseSetErrorObject(Response *s, Object *error) {
+  if (!s)
+    return false;
+
+  if (s->error) {
+    ObjectFree(&s->error);
+  }
+  s->error = error;
+  return true;
+}
+
+bool ResponseSetMsgId(Response *s, uint32_t msgid) {
+  if (!s)
+    return false;
+  s->msgid = msgid;
+  return true;
 }
 
 RawBuffer *ResponseMarshal(Response *s) {
@@ -40,31 +215,26 @@ RawBuffer *ResponseMarshal(Response *s) {
   mpack_writer_t writer;
   mpack_writer_init_growable(&writer, &data, &size);
 
+  /* Formato MsgPack-RPC Response: [type, msgid, error, result] */
   mpack_start_array(&writer, 4);
 
-  mpack_write_u8(&writer, HAZE_RPC_RESPONSE);
+  mpack_write_u8(&writer, (uint8_t)s->type);
   mpack_write_u32(&writer, s->msgid);
 
-  if (s->error && RawBufferLen(s->error) > 0) {
-    mpack_write_str(&writer, RawBufferData(s->error), RawBufferLen(s->error));
-  } else {
-    mpack_write_nil(&writer);
-  }
+  /* Error */
+  ObjectMarshalMPack(&writer, s->error);
 
-  if (s->result && RawBufferLen(s->result) > 0) {
-    mpack_write_str(&writer, RawBufferData(s->result), RawBufferLen(s->result));
-  } else {
-    mpack_write_nil(&writer);
-  }
+  /* Result */
+  ObjectMarshalMPack(&writer, s->result);
 
   mpack_finish_array(&writer);
 
   mpack_error_t error = mpack_writer_destroy(&writer);
-
   if (error != mpack_ok) {
     HazeLogError("ResponseMarshal failed: %s", mpack_error_to_string(error));
-
-    free(data);
+    if (data) {
+      free(data);
+    }
     return NULL;
   }
 
@@ -74,240 +244,140 @@ RawBuffer *ResponseMarshal(Response *s) {
   return buffer;
 }
 
-bool ResponseFree(Response **response) {
-    if (!response || !*response)
-        return false;
-
-    if ((*response)->error)
-        RawBufferFree(&(*response)->error);
-
-    if ((*response)->result)
-        RawBufferFree(&(*response)->result);
-
-    free(*response);
-    *response = NULL;
-
-    return true;
-}
-
-bool ResponseSetError(Response *s, MpackRPCError err) {
-  if (!s)
-    return false;
-
-  return RawBufferSetData(s->error, &err, sizeof(err));
-}
-bool ResponseSetMsgId(Response *s, uint32_t msgid) {
-  if (!s)
-    return false;
-  s->msgid = msgid;
-  return true;
-}
-
 Response *ResponseUnmarshal(RawBuffer *b) {
   if (!b || RawBufferLen(b) == 0)
     return NULL;
 
   mpack_reader_t reader;
-
-  mpack_reader_init_data(&reader, (const char *)RawBufferData(b),
-                         RawBufferLen(b));
+  mpack_reader_init_data(&reader, (const char *)RawBufferData(b), RawBufferLen(b));
 
   Response *response = NULL;
 
   uint32_t count = mpack_expect_array(&reader);
-
-  if (mpack_reader_error(&reader) != mpack_ok)
+  if (mpack_reader_error(&reader) != mpack_ok || count != 4) {
     goto fail;
-
-  if (count != 4)
-    goto fail;
+  }
 
   response = ResponseNew();
-
-  if (!response)
+  if (!response) {
     goto fail;
+  }
 
-  /*
-   * 1. type
-   */
+  /* 1. type */
   response->type = (HazeServerRPCType)mpack_expect_u8(&reader);
-
-  if (mpack_reader_error(&reader) != mpack_ok)
+  if (mpack_reader_error(&reader) != mpack_ok || response->type != HAZE_RPC_RESPONSE) {
     goto fail;
+  }
 
-  if (response->type != HAZE_RPC_RESPONSE)
-    goto fail;
-
-  /*
-   * 2. msgid
-   */
+  /* 2. msgid */
   response->msgid = mpack_expect_u32(&reader);
-
-  if (mpack_reader_error(&reader) != mpack_ok)
-    goto fail;
-
-  /*
-   * 3. error
-   *
-   * [nil] -> no error
-   * [bin] -> raw error payload
-   */
-  mpack_tag_t error_tag = mpack_peek_tag(&reader);
-
-  if (mpack_reader_error(&reader) != mpack_ok)
-    goto fail;
-
-  if (mpack_tag_type(&error_tag) == mpack_type_nil) {
-
-    mpack_expect_nil(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-      goto fail;
-
-  } else if (mpack_tag_type(&error_tag) == mpack_type_bin) {
-
-    size_t error_len = mpack_expect_bin(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-      goto fail;
-
-    if (error_len > 0) {
-      void *error_data = malloc(error_len);
-
-      if (!error_data)
-        goto fail;
-
-      mpack_read_bytes(&reader, error_data, error_len);
-
-      if (mpack_reader_error(&reader) != mpack_ok) {
-        free(error_data);
-        goto fail;
-      }
-
-      mpack_done_bin(&reader);
-
-      if (mpack_reader_error(&reader) != mpack_ok) {
-        free(error_data);
-        goto fail;
-      }
-
-      if (!RawBufferSetData(response->error, error_data, error_len)) {
-        free(error_data);
-        goto fail;
-      }
-
-      free(error_data);
-    } else {
-      mpack_done_bin(&reader);
-
-      if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
-    }
-
-  } else {
+  if (mpack_reader_error(&reader) != mpack_ok) {
     goto fail;
   }
 
-  /*
-   * 4. result
-   *
-   * [nil] -> no result
-   * [bin] -> raw result payload
-   */
-  mpack_tag_t result_tag = mpack_peek_tag(&reader);
-
-  if (mpack_reader_error(&reader) != mpack_ok)
-    goto fail;
-
-  if (mpack_tag_type(&result_tag) == mpack_type_nil) {
-
-    mpack_expect_nil(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-      goto fail;
-
-  } else if (mpack_tag_type(&result_tag) == mpack_type_bin) {
-
-    size_t result_len = mpack_expect_bin(&reader);
-
-    if (mpack_reader_error(&reader) != mpack_ok)
-      goto fail;
-
-    if (result_len > 0) {
-      void *result_data = malloc(result_len);
-
-      if (!result_data)
-        goto fail;
-
-      mpack_read_bytes(&reader, result_data, result_len);
-
-      if (mpack_reader_error(&reader) != mpack_ok) {
-        free(result_data);
-        goto fail;
-      }
-
-      mpack_done_bin(&reader);
-
-      if (mpack_reader_error(&reader) != mpack_ok) {
-        free(result_data);
-        goto fail;
-      }
-
-      if (!RawBufferSetData(response->result, result_data, result_len)) {
-        free(result_data);
-        goto fail;
-      }
-
-      free(result_data);
-    } else {
-      mpack_done_bin(&reader);
-
-      if (mpack_reader_error(&reader) != mpack_ok)
-        goto fail;
-    }
-
-  } else {
+  /* 3. error */
+  response->error = ObjectUnmarshalMPack(&reader);
+  if (mpack_reader_error(&reader) != mpack_ok) {
     goto fail;
   }
 
-  /*
-   * Finish the array.
-   */
+  /* 4. result */
+  response->result = ObjectUnmarshalMPack(&reader);
+  if (mpack_reader_error(&reader) != mpack_ok) {
+    goto fail;
+  }
+
   mpack_done_array(&reader);
-
-  if (mpack_reader_error(&reader) != mpack_ok)
+  if (mpack_reader_error(&reader) != mpack_ok) {
     goto fail;
+  }
 
   mpack_reader_destroy(&reader);
-
   return response;
 
 fail:
   mpack_reader_destroy(&reader);
-
-  if (response)
+  if (response) {
     ResponseFree(&response);
-
+  }
   return NULL;
 }
 
-Response *ResponseCreateStrResult(uint32_t msgid, const char *res) {
+bool ResponseFree(Response **response) {
+  if (!response || !*response)
+    return false;
 
+  if ((*response)->error) {
+    ObjectFree(&(*response)->error);
+  }
+
+  if ((*response)->result) {
+    ObjectFree(&(*response)->result);
+  }
+
+  free(*response);
+  *response = NULL;
+
+  return true;
+}
+
+Response *ResponseCreateStrResult(uint32_t msgid, const char *result) {
   Response *resp = ResponseNew();
+  if (!resp)
+    return NULL;
 
   ResponseSetMsgId(resp, msgid);
-
-  ResponseSetResult(resp, RawBufferNew(res, strlen(res)));
+  ResponseSetResultObject(resp, ObjectCreateStr(result));
 
   return resp;
 }
+
 Response *ResponseCreateError(uint32_t msgid, const char *err) {
   Response *resp = ResponseNew();
   if (!resp)
     return NULL;
+
   resp->type = HAZE_RPC_RESPONSE;
   resp->msgid = msgid;
-  if (err)
-    RawBufferSetData(resp->error, err, strlen(err));
+  if (err) {
+    resp->error = ObjectCreateStr(err);
+  } else {
+    resp->error = ObjectCreateNil();
+  }
+  return resp;
+}
+
+Response *ResponseCreateStrArrayResult(uint32_t msgid, const char **values) {
+  if (!values)
+    return NULL;
+
+  Response *resp = ResponseNew();
+  if (!resp)
+    return NULL;
+
+  ObjectArray *arr = ObjectArrayCreate();
+  if (!arr) {
+    free(resp);
+    return NULL;
+  }
+
+  size_t count = 0;
+  while (values[count]) {
+    ObjectArrayAppend(arr, ObjectCreateStr(values[count]));
+    count++;
+  }
+
+  Object *array_obj = ObjectNew();
+  if (!array_obj) {
+    ObjectArrayFree(&arr);
+    free(resp);
+    return NULL;
+  }
+  array_obj->type = OBJ_ARRAY;
+  array_obj->value.array_value = arr;
+
+  ResponseSetMsgId(resp, msgid);
+  ResponseSetResultObject(resp, array_obj);
+
   return resp;
 }

@@ -1,4 +1,5 @@
 #include "Session.h"
+#include "audio/SampleList.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +47,14 @@ Session *SessionNew(const char *session_name) {
   else
     s->session_name = strdup(session_name);
 
+  // importing samplelist
+  s->List = SampleListNew();
+
   return s;
+}
+
+const SampleList* SessionGetSampleList(Session* s) {
+  return s->List;
 }
 
 bool SessionSetName(Session *s, const char *SessionName) {
