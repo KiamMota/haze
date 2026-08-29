@@ -32,12 +32,12 @@ class Response:
     @classmethod
     def from_value(cls, value) -> "Response":
         if not isinstance(value, list) or len(value) != 4:
-            raise ValueError("Payload de resposta MessagePack-RPC inválido.")
+            raise ValueError("Invalid MessagePack-RPC response payload.")
 
         msg_type, msg_id, error, result = value
 
         if msg_type != MSGTYPE_RESPONSE:
-            raise ValueError(f"Tipo de mensagem inesperado: {msg_type}")
+            raise ValueError(f"Unexpected message type: {msg_type}")
 
         return cls(msg_id=msg_id, error=error, result=result)
 
@@ -61,12 +61,12 @@ class Metrics:
         print("\n" + "=" * 68)
         print(f" {self.name}")
         print("=" * 68)
-        print(f" Requisições enviadas : {self.requests:,}")
-        print(f" Respostas recebidas  : {self.received:,}")
-        print(f" Erros RPC/protocolo  : {self.errors:,}")
-        print(f" Falhas de conexão    : {self.connection_failures:,}")
-        print(f" Tempo total          : {self.elapsed:.4f} s")
-        print(f" Throughput            : {rps:,.2f} req/s")
+        print(f" Sent requests       : {self.requests:,}")
+        print(f" Received responses  : {self.received:,}")
+        print(f" RPC/protocol errors : {self.errors:,}")
+        print(f" Connection failures : {self.connection_failures:,}")
+        print(f" Total time          : {self.elapsed:.4f} s")
+        print(f" Throughput          : {rps:,.2f} req/s")
 
         if self.latencies:
             lat = sorted(self.latencies)
@@ -76,12 +76,12 @@ class Metrics:
                 return lat[idx] * 1000.0
 
             avg = (sum(lat) / len(lat)) * 1000.0
-            print(f" Latência média       : {avg:.3f} ms")
-            print(f" Latência mínima      : {lat[0] * 1000.0:.3f} ms")
-            print(f" Latência p50         : {percentile(0.50):.3f} ms")
-            print(f" Latência p95         : {percentile(0.95):.3f} ms")
-            print(f" Latência p99         : {percentile(0.99):.3f} ms")
-            print(f" Latência máxima      : {lat[-1] * 1000.0:.3f} ms")
+            print(f" Average latency     : {avg:.3f} ms")
+            print(f" Minimum latency     : {lat[0] * 1000.0:.3f} ms")
+            print(f" Latency p50         : {percentile(0.50):.3f} ms")
+            print(f" Latency p95         : {percentile(0.95):.3f} ms")
+            print(f" Latency p99         : {percentile(0.99):.3f} ms")
+            print(f" Maximum latency     : {lat[-1] * 1000.0:.3f} ms")
 
         print("=" * 68)
 
@@ -90,7 +90,7 @@ async def recv_one(unpacker, reader) -> Response:
     while True:
         data = await reader.read(65536)
         if not data:
-            raise ConnectionError("Servidor fechou a conexão.")
+            raise ConnectionError("Server closed the connection.")
 
         unpacker.feed(data)
 
@@ -104,7 +104,7 @@ async def test_new_connection_per_request(
     total_requests: int,
 ) -> Metrics:
     metrics = Metrics(
-        name="TESTE 1 — NOVA CONEXÃO POR REQUEST",
+        name="TEST 1 — NEW CONNECTION PER REQUEST",
         requests=total_requests,
     )
 
@@ -146,7 +146,7 @@ async def test_open_connection_one_request(
     total_requests: int,
 ) -> Metrics:
     metrics = Metrics(
-        name="TESTE 2 — SOCKET ABERTO + 1 REQUEST",
+        name="TEST 2 — OPEN SOCKET + 1 REQUEST",
         requests=total_requests,
     )
 
@@ -188,7 +188,7 @@ async def test_persistent_socket(
     total_requests: int,
 ) -> Metrics:
     metrics = Metrics(
-        name="TESTE 3 — SOCKET PERSISTENTE + MÚLTIPLOS REQUESTS",
+        name="TEST 3 — PERSISTENT SOCKET + MULTIPLE REQUESTS",
         requests=total_requests,
     )
 
@@ -205,7 +205,7 @@ async def test_persistent_socket(
                 data = await reader.read(65536)
 
                 if not data:
-                    raise ConnectionError("Servidor fechou a conexão.")
+                    raise ConnectionError("Server closed the connection.")
 
                 unpacker.feed(data)
 
@@ -260,8 +260,8 @@ async def main():
     print("=" * 68)
     print(" HAZE RPC BENCHMARK")
     print("=" * 68)
-    print(f" Alvo       : {HOST}:{PORT}")
-    print(f" Requests   : {TOTAL_REQUESTS:,}")
+    print(f" Target      : {HOST}:{PORT}")
+    print(f" Requests    : {TOTAL_REQUESTS:,}")
     print("=" * 68)
 
     tests = [
