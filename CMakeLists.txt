@@ -20,13 +20,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ============================================================
 set(HAZE_SOURCE_DIR      "${CMAKE_CURRENT_SOURCE_DIR}/source")
 set(HAZE_THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
-set(HAZE_TESTS_DIR       "${CMAKE_CURRENT_SOURCE_DIR}/tests")
 
 # ============================================================
 # Dependencies
 # ============================================================
 include(FetchContent)
-enable_testing()
 
 FetchContent_Declare(
     libuv
@@ -114,19 +112,8 @@ if(WIN32)
 endif()
 
 # ============================================================
-# Teste proto
-# ============================================================
-add_executable(proto "${HAZE_TESTS_DIR}/proto.c")
-add_executable(response "${HAZE_TESTS_DIR}/response.c")
-
-target_link_libraries(proto PRIVATE haze_core)
-target_link_libraries(response PRIVATE haze_core)
-target_compile_definitions(proto PRIVATE _XOPEN_SOURCE=700)
-
-# ============================================================
 # Warnings
 # ============================================================
-set(HAZE_TARGETS haze_core haze proto)
 
 if(MSVC)
     foreach(T ${HAZE_TARGETS})

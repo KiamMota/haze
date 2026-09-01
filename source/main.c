@@ -5,7 +5,7 @@
 #include "server/HazeServer.h"
 #include <stdio.h>
 #include <string.h>
-#include <uv.h> // Incluído assumindo que uv_strerror, UV_EADDRINUSE, etc, vêm daqui
+#include <uv.h> 
 
 void VersionMessage(void) { 
     fprintf(stdout, "haze %s\n", HAZE_VERSION_STR); 
