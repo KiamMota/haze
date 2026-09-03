@@ -6,7 +6,7 @@
 #include "mpack/mpack-writer.h"
 #include "proto/MessagePackRPC.h"
 #include "proto/Object.h"
-#include "proto/RawBuffer.h"
+#include "RawBuffer.h"
 
 #include <stddef.h>
 #include <stdint.h>

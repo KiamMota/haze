@@ -1,7 +1,7 @@
 #include "HazeServer.h"
 #include "HazeLog.h"
 #include "HazeServerDispatch.h"
-#include "proto/RawBuffer.h"
+#include "RawBuffer.h"
 #include "proto/Request.h"
 #include "proto/Response.h"
 #include <stddef.h>

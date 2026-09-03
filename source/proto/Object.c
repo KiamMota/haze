@@ -472,7 +472,6 @@ bool ObjectMapTableRemove(ObjectMapTable *table, const Object *key) {
         if (ObjectEquals(table->pairs[i]->Key, key)) {
             ObjectMapFree(&table->pairs[i]);
 
-            // Deslocar pares para preencher o espaço
             for (size_t j = i; j < table->len - 1; j++) {
                 table->pairs[j] = table->pairs[j + 1];
             }

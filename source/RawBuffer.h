@@ -79,4 +79,22 @@ bool RawBufferSetData(RawBuffer *b, void *data, size_t len);
  */
 bool RawBufferClear(RawBuffer* b);
 
+/**
+ * @brief Checks whether the buffer is NULL or contains no data.
+ *
+ * A buffer is considered null or empty when the pointer itself is NULL,
+ * its data pointer is NULL, or its size is zero.
+ *
+ * @param b The buffer to check.
+ *
+ * @return true if the buffer is NULL or empty, otherwise false.
+ */
+static inline bool RawBufferIsNullOrEmpty(RawBuffer* b)
+{
+    if (b == NULL)
+        return true;
+
+    return b->data == NULL || b->len == 0;
+}
+
 #endif

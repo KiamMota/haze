@@ -2,6 +2,7 @@
 #include "HazeVersion.h"
 #include "Session.h"
 #include "audio/HazeEngine.h"
+#include "fs/Path.h"
 #include "server/HazeServer.h"
 #include <stdio.h>
 #include <string.h>
@@ -18,9 +19,12 @@ int main(int argc, char **argv) {
             return 0;
         }
     }
+    printf("Loading paths... ");
+    Path* p = PathBuild(PathHomeStr(), "Haze", NULL);
+    printf("Done.\n");
 
-    Session* s = SessionNew(NULL);
-    printf("session name: %s\n", SessionGetName(s));
+    SessionInstance = SessionNew(NULL);
+    printf("session name: %s\n", SessionGetName(SessionInstance));
 
     HazeLogInfo("starting audio engine...");
     if (!HazeEngineInit()) {

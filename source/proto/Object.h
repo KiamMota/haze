@@ -1,7 +1,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include "proto/RawBuffer.h"
+#include "RawBuffer.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
