@@ -52,11 +52,14 @@ Path *PathBuild(const char *first, ...) {
         return NULL;
 
     strcpy(combined, first);
-    
     va_start(args, first);
     part = va_arg(args, const char *);
     while (part != NULL) {
+      #if WINDOWS
+        strcat(combined, "\\");      
+      #else  
         strcat(combined, "/");
+      #endif
         strcat(combined, part);
         part = va_arg(args, const char *);
     }
@@ -71,6 +74,7 @@ Path *PathBuild(const char *first, ...) {
     new_path->path = combined;
     return new_path;
 }
+
 Path *PathAbs(const char *path) {
   char resolved[PATH_MAX];
 
