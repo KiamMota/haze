@@ -19,4 +19,5 @@ Haze/
 ├── samples/
 ├── cache/
 ├── config/
+├── community/
 └── logs/

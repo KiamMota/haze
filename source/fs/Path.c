@@ -2,10 +2,10 @@
 #include "HazeMacros.h"
 #include <linux/limits.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #if WINDOWS
 #include <windows.h>
@@ -32,21 +32,45 @@ void PathFree(Path **path) {
 }
 
 Path *PathBuild(const char *first, ...) {
-  va_list args;
+    if (!first)
+        return NULL;
 
-  va_start(args, first);
+    va_list args;
 
-  const char *part = first;
+    va_start(args, first);
+    size_t total_len = strlen(first);
+    
+    const char *part = va_arg(args, const char *);
+    while (part != NULL) {
+        total_len += 1 + strlen(part); // +1 para a barra '/'
+        part = va_arg(args, const char *);
+    }
+    va_end(args);
 
-  while (part != NULL) {
+    char *combined = malloc(total_len + 1);
+    if (!combined)
+        return NULL;
+
+    strcpy(combined, first);
+    
+    va_start(args, first);
     part = va_arg(args, const char *);
-  }
+    while (part != NULL) {
+        strcat(combined, "/");
+        strcat(combined, part);
+        part = va_arg(args, const char *);
+    }
+    va_end(args);
 
-  va_end(args);
+    Path *new_path = malloc(sizeof(Path));
+    if (!new_path) {
+        free(combined);
+        return NULL;
+    }
 
-  return NULL;
+    new_path->path = combined;
+    return new_path;
 }
-
 Path *PathAbs(const char *path) {
   char resolved[PATH_MAX];
 
@@ -79,30 +103,26 @@ Path *PathHome(void) {
   return path;
 }
 
-const char *PathHomeStr(void) {
-#if WINDOWS
-  return strdup(getenv("USERPROFILE"));
-#elif LINUX || MACOS || BSD
-  return strdup(getenv("HOME"));
-#else
-  free(path);
-  return NULL;
-#endif
-}
-bool PathIsNullOrEmpty(const Path *path) {
-  if (path == NULL || path->path == NULL)
-    return true;
-  return false;
+const char *PathStr(const Path *p) {
+  if (PathIsNullOrEmpty(p)) return NULL;
+
+  return p->path;
 }
 
-bool PathExists(const Path* path) {
-    if (PathIsNullOrEmpty(path))
-        return false;
+bool PathIsNullOrEmpty(const Path* path) {
+    return path == NULL ||
+           path->path == NULL ||
+           path->path[0] == '\0';
+}
+
+bool PathExists(const Path *path) {
+  if (PathIsNullOrEmpty(path))
+    return false;
 
 #if WINDOWS
-    return GetFileAttributesA(path->path) != INVALID_FILE_ATTRIBUTES;
+  return GetFileAttributesA(path->path) != INVALID_FILE_ATTRIBUTES;
 #else
-    struct stat st;
-    return stat(path->path, &st) == 0;
+  struct stat st;
+  return stat(path->path, &st) == 0;
 #endif
 }

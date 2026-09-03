@@ -18,7 +18,7 @@ The schema is designed around four principles:
 ```text
 HZ Project
 │
-├── Header
+├── Header 
 │   ├── Schema Version
 │   ├── Haze Version
 │   ├── Project Name

@@ -11,7 +11,7 @@ void PathFree(Path** path);
 Path* PathBuild(const char* first, ...);
 Path* PathAbs(const char* path);
 Path* PathHome(void);
-const char* PathHomeStr(void);
+const char* PathStr(const Path* p);
 bool PathIsNullOrEmpty(const Path* Path);
 bool PathExists(const Path* path);
 bool PathIsFile(const Path* path);
