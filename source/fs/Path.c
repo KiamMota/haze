@@ -5,6 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+#if WINDOWS
+#include <windows.h>
+#elif LINUX || MACOS || BSD
+#include <sys/stat.h>
+#endif
 
 Path *PathNew(const char *path) {
   Path *p = malloc(sizeof(Path));
@@ -32,7 +39,6 @@ Path *PathBuild(const char *first, ...) {
   const char *part = first;
 
   while (part != NULL) {
-    printf("%s\n", part);
     part = va_arg(args, const char *);
   }
 
@@ -89,14 +95,14 @@ bool PathIsNullOrEmpty(const Path *path) {
   return false;
 }
 
-bool PathExists(const Path *path) {
-  if (PathIsNullOrEmpty(path))
-    return false;
+bool PathExists(const Path* path) {
+    if (PathIsNullOrEmpty(path))
+        return false;
 
-#ifdef WINDOWS
-  return GetFileAttributesA(path->path) != INVALID_FILE_ATTRIBUTES;
+#if WINDOWS
+    return GetFileAttributesA(path->path) != INVALID_FILE_ATTRIBUTES;
 #else
-  struct stat st;
-  return stat(path->path, &st) == 0;
+    struct stat st;
+    return stat(path->path, &st) == 0;
 #endif
 }
