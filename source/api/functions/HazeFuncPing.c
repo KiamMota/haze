@@ -1,6 +1,6 @@
-#include "HazeFuncPing.h"
-#include "proto/Request.h"
-#include "proto/Response.h"
+#include "api/functions/HazeFuncPing.h"
+#include "api/proto/Request.h"
+#include "api/proto/Response.h"
 
 Response *HazeFuncPing(Request *req)
 {

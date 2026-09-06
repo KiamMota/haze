@@ -1,12 +1,10 @@
 #include "Request.h"
 #include "HazeLog.h"
-#include "HazeMacros.h"
-#include "audio/HazeEngine.h"
 #include "mpack/mpack-common.h"
 #include "mpack/mpack-platform.h"
 #include "mpack/mpack-reader.h"
 #include "mpack/mpack-writer.h"
-#include "proto/MessagePackRPC.h"
+#include "api/proto/MessagePackRPC.h"
 #include "RawBuffer.h"
 
 #include <stddef.h>
@@ -226,7 +224,6 @@ Request *RequestUnmarshal(RawBuffer *b) {
   /* Array de envelope */
   tag = mpack_read_tag(&reader);
   if (mpack_tag_type(&tag) != mpack_type_array || mpack_tag_array_count(&tag) != 4) {
-    HazeLogError("Unmarshal failed: Array de tamanho 4 esperado");
     goto fail;
   }
 

@@ -4,8 +4,8 @@
 #include "mpack/mpack-expect.h"
 #include "mpack/mpack-reader.h"
 #include "mpack/mpack-writer.h"
-#include "proto/MessagePackRPC.h"
-#include "proto/Object.h"
+#include "api/proto/MessagePackRPC.h"
+#include "api/proto/Object.h"
 #include "RawBuffer.h"
 
 #include <stddef.h>

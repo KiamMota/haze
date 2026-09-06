@@ -31,7 +31,7 @@ void PathFree(Path **path) {
   *path = NULL;
 }
 
-Path *PathBuild(const char *first, ...) {
+Path *PathJoin(const char *first, ...) {
     if (!first)
         return NULL;
 

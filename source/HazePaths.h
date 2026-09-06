@@ -2,7 +2,6 @@
 #define HAZE_PATHS_H
 
 #include "fs/Path.h"
-#include <asm-generic/param.h>
 typedef struct {
   Path* HazeRoot;
   Path* HazeProjects;

@@ -1,5 +1,5 @@
 #include "HazePaths.h"
-#include "HazeLog.h"
+#include "fs/Path.h"
 #include <stdlib.h>
 
 HazePaths* HazePathsInstance;
@@ -29,33 +29,25 @@ HazePaths* HazePathsLoad(void) {
 
     Path* home = PathHome();
     if (!home) {
-        HazeLogError("PathHome() falhou.");
         free(paths);
         return NULL;
     }
 
-    paths->HazeRoot = PathBuild(home->path, "Haze", NULL);
+    paths->HazeRoot = PathJoin(home->path, "Haze", NULL);
     PathFree(&home);
 
     if (!paths->HazeRoot) {
-        HazeLogError("HazeRoot falhou ao construir.");
         free(paths);
         return NULL;
     }
 
-    paths->HazeProjects  = PathBuild(paths->HazeRoot->path, "projects", NULL);
-    paths->HazeSamples   = PathBuild(paths->HazeRoot->path, "samples", NULL);
-    paths->HazeCache     = PathBuild(paths->HazeRoot->path, "cache", NULL);
-    paths->HazeConfig    = PathBuild(paths->HazeRoot->path, "config", NULL);
-    paths->HazeCommunity = PathBuild(paths->HazeRoot->path, "community", NULL);
-    paths->HazeLogs      = PathBuild(paths->HazeRoot->path, "logs", NULL);
+    paths->HazeProjects  = PathJoin(paths->HazeRoot->path, "projects", NULL);
+    paths->HazeSamples   = PathJoin(paths->HazeRoot->path, "samples", NULL);
+    paths->HazeCache     = PathJoin(paths->HazeRoot->path, "cache", NULL);
+    paths->HazeConfig    = PathJoin(paths->HazeRoot->path, "config", NULL);
+    paths->HazeCommunity = PathJoin(paths->HazeRoot->path, "community", NULL);
+    paths->HazeLogs      = PathJoin(paths->HazeRoot->path, "logs", NULL);
 
-    if (!paths->HazeProjects)  HazeLogError("HazeProjects falhou.");
-    if (!paths->HazeSamples)   HazeLogError("HazeSamples falhou.");
-    if (!paths->HazeCache)     HazeLogError("HazeCache falhou.");
-    if (!paths->HazeConfig)    HazeLogError("HazeConfig falhou.");
-    if (!paths->HazeCommunity) HazeLogError("HazeCommunity falhou.");
-    if (!paths->HazeLogs)      HazeLogError("HazeLogs falhou.");
 
     if (!paths->HazeProjects ||
         !paths->HazeSamples ||

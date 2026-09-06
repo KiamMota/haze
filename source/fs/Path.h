@@ -8,7 +8,7 @@ typedef struct {
 
 Path* PathNew(const char* path);
 void PathFree(Path** path);
-Path* PathBuild(const char* first, ...);
+Path* PathJoin(const char* first, ...);
 Path* PathAbs(const char* path);
 Path* PathHome(void);
 const char* PathStr(const Path* p);

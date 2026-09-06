@@ -1,10 +1,10 @@
 #include "Macros.h"
 #include "Result.h"
-#include "Session.h"
+#include "session/Session.h"
 #include "audio/SampleList.h"
-#include "proto/Object.h"
-#include "proto/Request.h"
-#include "proto/Response.h"
+#include "api/proto/Object.h"
+#include "api/proto/Request.h"
+#include "api/proto/Response.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>

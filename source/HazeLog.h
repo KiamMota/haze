@@ -39,7 +39,7 @@ static inline const char *_HazeLog_level_str(HazeLogLevel level) {
 }
 
 static inline void _HazeLog(HazeLogLevel level, const char *file, int line,
-                            const char *fmt, ...) {
+                            const char *module, const char *fmt, ...) {
   struct timespec ts;
   timespec_get(&ts, TIME_UTC);
   
@@ -47,7 +47,6 @@ static inline void _HazeLog(HazeLogLevel level, const char *file, int line,
   char timebuf[20];
   strftime(timebuf, sizeof(timebuf), "%H:%M:%S", tm);
 
-  // Extrai apenas o nome do arquivo, ignorando o caminho absoluto
   const char *short_file = file;
   for (const char *p = file; *p; ++p) {
     if (*p == '/' || *p == '\\') {
@@ -55,10 +54,11 @@ static inline void _HazeLog(HazeLogLevel level, const char *file, int line,
     }
   }
 
-  // Agora usando short_file no lugar do file completo
-  fprintf(stderr, "%s[%s.%03ld]%s [%s] %s(%s:%d)%s ", 
+  // Imprime: [TEMPO] [NIVEL] [MODULO] (arquivo:linha) 
+  fprintf(stderr, "%s[%s.%03ld]%s [%s] %s[%s]%s %s(%s:%d)%s ", 
           HAZE_COLOR_GRAY, timebuf, ts.tv_nsec / 1000000, HAZE_COLOR_RESET, 
           _HazeLog_level_str(level), 
+          HAZE_COLOR_CYAN, module ? module : "MAIN", HAZE_COLOR_RESET,
           HAZE_COLOR_GRAY, short_file, line, HAZE_COLOR_RESET);
 
   va_list args;
@@ -72,15 +72,15 @@ static inline void _HazeLog(HazeLogLevel level, const char *file, int line,
     abort();
 }
 
-#define HazeLogDebug(fmt, ...)                                                 \
-  _HazeLog(HAZE_LOG_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define HazeLogInfo(fmt, ...)                                                  \
-  _HazeLog(HAZE_LOG_INFO, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define HazeLogWarn(fmt, ...)                                                  \
-  _HazeLog(HAZE_LOG_WARN, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define HazeLogError(fmt, ...)                                                 \
-  _HazeLog(HAZE_LOG_ERROR, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define HazeLogFatal(fmt, ...)                                                 \
-  _HazeLog(HAZE_LOG_FATAL, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define HazeLogDebug(module, fmt, ...)                                         \
+  _HazeLog(HAZE_LOG_DEBUG, __FILE__, __LINE__, module, fmt, ##__VA_ARGS__)
+#define HazeLogInfo(module, fmt, ...)                                          \
+  _HazeLog(HAZE_LOG_INFO, __FILE__, __LINE__, module, fmt, ##__VA_ARGS__)
+#define HazeLogWarn(module, fmt, ...)                                          \
+  _HazeLog(HAZE_LOG_WARN, __FILE__, __LINE__, module, fmt, ##__VA_ARGS__)
+#define HazeLogError(module, fmt, ...)                                         \
+  _HazeLog(HAZE_LOG_ERROR, __FILE__, __LINE__, module, fmt, ##__VA_ARGS__)
+#define HazeLogFatal(module, fmt, ...)                                         \
+  _HazeLog(HAZE_LOG_FATAL, __FILE__, __LINE__, module, fmt, ##__VA_ARGS__)
 
 #endif

@@ -1,9 +1,7 @@
 #include "HazeServer.h"
 #include "HazeLog.h"
-#include "HazeServerDispatch.h"
+#include "HazeServerDispatcher.h"
 #include "RawBuffer.h"
-#include "proto/Request.h"
-#include "proto/Response.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -101,88 +99,133 @@ void haze_send(uv_stream_t *stream, const void *data, size_t len) {
     }
 }
 
-static void haze_on_read(uv_stream_t *stream, ssize_t nread,
-                         const uv_buf_t *buf) {
-  HazeConn *conn = (HazeConn *)stream->data;
+static void haze_on_read(uv_stream_t *stream,
+                         ssize_t nread,
+                         const uv_buf_t *buf)
+{
+    HazeConn *conn = (HazeConn *)stream->data;
 
-  if (nread < 0) {
-    if (nread != UV_EOF) {
-        HazeLogWarn("Read error: %s", uv_err_name((int)nread));
-    }
-    if (buf->base) free(buf->base);
-    uv_close((uv_handle_t *)stream, haze_on_close);
-    return;
-  }
+    if (nread < 0) {
+        if (nread != UV_EOF) {
+            HazeLogWarn(
+                "Read error: %s",
+                uv_err_name((int)nread)
+            );
+        }
 
-  if (nread == 0) {
-    if (buf->base) free(buf->base);
-    return;
-  }
-
-  // 1. Acumula os novos bytes no buffer da conexão
-  size_t new_len = conn->buffer_len + nread;
-  if (new_len > conn->buffer_cap) {
-    size_t new_cap = conn->buffer_cap == 0 ? 1024 : conn->buffer_cap * 2;
-    while (new_cap < new_len) new_cap *= 2;
-    
-    char *new_buf = realloc(conn->buffer, new_cap);
-    if (!new_buf) {
-        HazeLogError("Out of memory reallocating connection buffer");
-        if (buf->base) free(buf->base);
+        free(buf->base);
         uv_close((uv_handle_t *)stream, haze_on_close);
         return;
     }
-    conn->buffer = new_buf;
-    conn->buffer_cap = new_cap;
-  }
-  memcpy(conn->buffer + conn->buffer_len, buf->base, nread);
-  conn->buffer_len = new_len;
-  if (buf->base) free(buf->base);
 
-  // 2. Tenta fazer o parse iterativo de mensagens no buffer
-  while (conn->buffer_len > 0) {
-    RawBuffer recv = RawBufferInit(conn->buffer, conn->buffer_len);
-    Request *request = RequestUnmarshal(&recv);
-
-    // Mensagem incompleta, aguarda mais bytes do socket
-    if (!request) {
-      if (conn->buffer_len > 4 * 1024 * 1024) { // Limite de segurança: 4MB
-         HazeLogWarn("Buffer capacity exceeded 4MB, potential malformed stream. Closing.");
-         uv_close((uv_handle_t *)stream, haze_on_close);
-      }
-      break; 
+    if (nread == 0) {
+        free(buf->base);
+        return;
     }
 
-    Response *response = HazeServerDispatch(request);
-    if (response) {
-      RawBuffer *sendResponse = ResponseMarshal(response);
-      if (sendResponse) {
-        haze_send(stream, RawBufferData(sendResponse), RawBufferLen(sendResponse));
-        RawBufferFree(&sendResponse);
-      }
-      ResponseFree(&response);
-    }
-    RequestFree(&request);
-    
-    size_t consumed = recv.len; 
+    size_t new_len = conn->buffer_len + (size_t)nread;
 
-    if (consumed == 0 || consumed > conn->buffer_len) {
-        HazeLogError("Parser state invalid. Closing connection.");
-        uv_close((uv_handle_t *)stream, haze_on_close);
-        break;
+    if (new_len > conn->buffer_cap) {
+        size_t new_cap =
+            conn->buffer_cap == 0
+                ? 1024
+                : conn->buffer_cap;
+
+        while (new_cap < new_len)
+            new_cap *= 2;
+
+        char *new_buffer = realloc(conn->buffer, new_cap);
+
+        if (!new_buffer) {
+            HazeLogError("ON ReAD",
+                "Failed to resize connection buffer"
+            );
+
+            free(buf->base);
+            uv_close(
+                (uv_handle_t *)stream,
+                haze_on_close
+            );
+            return;
+        }
+
+        conn->buffer = new_buffer;
+        conn->buffer_cap = new_cap;
     }
 
-    // 3. Desliza a memória restante para o começo do buffer
-    conn->buffer_len -= consumed;
-    if (conn->buffer_len > 0) {
-        memmove(conn->buffer, conn->buffer + consumed, conn->buffer_len);
+    memcpy(
+        conn->buffer + conn->buffer_len,
+        buf->base,
+        (size_t)nread
+    );
+
+    conn->buffer_len = new_len;
+
+    free(buf->base);
+
+    /*
+     * O servidor não interpreta o conteúdo.
+     * Apenas entrega os bytes recebidos para a API.
+     */
+    while (conn->buffer_len > 0) {
+        RawBuffer buffer = RawBufferInit(
+            conn->buffer,
+            conn->buffer_len
+        );
+
+        RawBuffer *response = HazeServerAPIDispatcher(&buffer);
+
+        if (!response)
+            break;
+
+        haze_send(
+            stream,
+            RawBufferData(response),
+            RawBufferLen(response)
+        );
+
+        RawBufferFree(&response);
+
+        size_t consumed = buffer.len;
+
+        if (consumed == 0 ||
+            consumed > conn->buffer_len) {
+            HazeLogError("ON READ",
+                "Invalid API buffer consumption"
+            );
+
+            uv_close(
+                (uv_handle_t *)stream,
+                haze_on_close
+            );
+            break;
+        }
+
+        conn->buffer_len -= consumed;
+
+        if (conn->buffer_len > 0) {
+            memmove(
+                conn->buffer,
+                conn->buffer + consumed,
+                conn->buffer_len
+            );
+        }
     }
-  }
+
+    if (conn->buffer_len > 4 * 1024 * 1024) {
+        HazeLogWarn("SERVER",
+            "Connection buffer exceeded 4 MB"
+        );
+
+        uv_close(
+            (uv_handle_t *)stream,
+            haze_on_close
+        );
+    }
 }
-
 static void haze_on_connect(uv_stream_t *server, int status) {
   if (status < 0) {
-    HazeLogError("connect error: %s", uv_strerror(status));
+    HazeLogError("ON CONNECT", "connect error: %s", uv_strerror(status));
     return;
   }
 
@@ -279,3 +322,4 @@ const char *HazeServerAddress(HazeServer *s) {
   if (!s) return NULL;
   return s->addr;
 }
+

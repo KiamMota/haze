@@ -1,8 +1,8 @@
 #ifndef SAMPLE_LIST_H
 #define SAMPLE_LIST_H
 
-#include "proto/Request.h"
-#include "proto/Response.h"
+#include "api/proto/Request.h"
+#include "api/proto/Response.h"
 
 Response *FnSampleListImportSample(Request *rq);
 Response *FnSampleListDelete(Request *rq);

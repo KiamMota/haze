@@ -3,7 +3,7 @@
 
 #include "MessagePackRPC.h"
 #include "RawBuffer.h"
-#include "proto/Object.h"
+#include "api/proto/Object.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
