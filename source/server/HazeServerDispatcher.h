@@ -4,7 +4,7 @@
 #include "RawBuffer.h"
 #include "api/proto/Request.h"
 #include "api/proto/Response.h"
-#include "api/functions/Dispatcher.h"
+#include "api/Dispatcher.h"
 
 RawBuffer *HazeServerAPIDispatcher(RawBuffer *buffer)
 {
