@@ -129,7 +129,7 @@ func CreateFile(path string, content []byte) (error) {
 }
 
 func main() {
-	path := "../functions/"
+	path := "../../source/api/functions/"
 
 	fileNames, err := GetHeaderFiles(path)
 	if err != nil {
