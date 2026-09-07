@@ -18,7 +18,7 @@ typedef struct {
   ObjectArray *parameters;
 } Request;
 
-Object* *RequestParamGet(const Request *rq, uint32_t index);
+Object* RequestParamGet(const Request *rq, uint32_t index);
 bool RequestParamAppend(Request *rq, Object *param, uint32_t ind);
 Object* RequestParamNew(void);
 void RequestParamFree(Object** r);

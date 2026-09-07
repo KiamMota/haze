@@ -1,0 +1,32 @@
+{
+  "modules": {
+    "sample": {
+      "import": {
+        "description": "",
+        "return": "Result"
+      },
+      "play": {
+        "description": "",
+        "return": "Result"
+      }
+    },
+    "session": {
+      "create": {
+        "description": "",
+        "return": "Result"
+      },
+      "get_name": {
+        "description": "",
+        "return": "string"
+      },
+      "get_working_time": {
+        "description": "",
+        "return": "int"
+      },
+      "init": {
+        "description": "",
+        "return": "Result"
+      }
+    }
+  }
+}

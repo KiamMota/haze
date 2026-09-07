@@ -114,13 +114,13 @@ void RequestParamFree(Object **r) {
   ObjectFree(r);
 }
 
-Object **RequestParamGet(const Request *r, uint32_t index) {
+Object *RequestParamGet(const Request *r, uint32_t index) {
   if (!r || !r->parameters)
     return NULL;
 
   /* Retorna o ponteiro para a posição no ObjectArray */
   if (index < ObjectArrayLen(r->parameters)) {
-    return &r->parameters->objects[index];
+    return r->parameters->objects[index];
   }
 
   return NULL;
