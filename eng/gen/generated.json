@@ -1,0 +1,34 @@
+{
+  "modules": {
+    "sample": {
+      "play": {
+        "description": "Play a sample from the current session",
+        "return": "Result"
+      }
+    },
+    "sample_list": {
+      "import": {
+        "description": "Remove a sample of sample list",
+        "return": "Result"
+      }
+    },
+    "session": {
+      "create": {
+        "description": "Create a new Haze session",
+        "return": "Result"
+      },
+      "get_name": {
+        "description": "Get the current session name",
+        "return": "string"
+      },
+      "get_working_time": {
+        "description": "Get the current session working time",
+        "return": "int"
+      },
+      "init": {
+        "description": "Initialize the Haze session",
+        "return": "Result"
+      }
+    }
+  }
+}

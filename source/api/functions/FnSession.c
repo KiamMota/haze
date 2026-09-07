@@ -1,4 +1,4 @@
-#include "Funcs.h"
+#include "FnSession.h"
 #include "audio/Sample.h"
 #include "audio/SampleList.h"
 #include "session/Session.h"
@@ -52,7 +52,7 @@ Result haze_sample_import(const char *path) {
   return SampleListImportByFile(SessionGetSampleList(SessionInstance), path);
 }
 
-Result haze_sample_play(const char *sample_name) {
+Result FnSamplePlay(const char *sample_name) {
   if (!sample_name || sample_name[0] == '\0') {
     return ResultErr("Invalid sample name.");
   }

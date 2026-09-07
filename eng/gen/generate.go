@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 )
+
 type JSONFunction struct {
 	Description string `json:"description"`
 	Return      string `json:"return"`
@@ -15,11 +16,17 @@ type JSONRepresentation struct {
 	Modules map[string]map[string]JSONFunction `json:"modules"`
 }
 
+type Param struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
 type Represent struct {
-	Module      string `json:"module"`
-	Acessor     string `json:"acessor"`
-	Description string `json:"description"`
-	Return      string `json:"return"`
+	Module      string  `json:"module"`
+	Acessor     string  `json:"acessor"`
+	Parameters  []Param `json:"parameter"`
+	Description string  `json:"description"`
+	Return      string  `json:"return"`
 }
 
 func ReadFile(path string) (string, error) {
@@ -88,6 +95,17 @@ func ParseHeader(content string) ([]Represent, error) {
 				rep.Description = value
 			}
 
+			if value := ParseTag(commentLine, "@param"); value != "" {
+				parts := strings.Fields(value)
+
+				if len(parts) >= 2 {
+					rep.Parameters = append(rep.Parameters, Param{
+						Type: parts[0],
+						Name: parts[1],
+					})
+				}
+			}
+
 			if value := ParseTag(commentLine, "@return"); value != "" {
 				rep.Return = value
 			}
@@ -119,7 +137,7 @@ func BuildJSON(represents []Represent) ([]byte, error) {
 	return json.MarshalIndent(result, "", "  ")
 }
 
-func CreateFile(path string, content []byte) (error) {
+func CreateFile(path string, content []byte) error {
 	err := os.WriteFile(path, []byte(content), 0644)
 	if err != nil {
 		return err
@@ -165,14 +183,13 @@ func main() {
 		return
 	}
 
-	err =CreateFile("generated.json", json)
+	err = CreateFile("generated.json", json)
 	if err != nil {
 		println("error")
 		println("script error: ", err.Error())
 		return
-	} 
+	}
 	print("done.")
 	return
-
 
 }
