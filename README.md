@@ -66,6 +66,53 @@ Most DAWs bind engine, state, and UI into one binary. Haze treats the core as a 
 
 The editor is not the product kernel. It is one frontend on top of it.
 
-## Status
+## Build
 
-Haze is under active development. Protocol and module docs are the integration surface; see `docs/` for API rules and per-function specifications.
+Haze requires:
+
+* CMake 3.20 or newer
+* A C11-compatible C compiler
+* Git
+* Internet access during the CMake configuration step
+
+libuv is downloaded automatically by CMake, and the dependencies inside `third_party/` are compiled as part of the project.
+
+### Linux
+
+Haze is tested with both GCC and Clang.
+
+```sh
+cmake -S . -B build
+cmake --build build
+```
+
+Run:
+
+```sh
+./build/haze
+```
+
+### Windows
+
+Haze is tested with MinGW.
+
+```sh
+cmake -S . -B build -G "MinGW Makefiles"
+cmake --build build
+```
+
+Run:
+
+```powershell
+.\build\haze.exe
+```
+
+### macOS
+
+macOS **should work** with its standard C toolchain, but it has not been tested yet.
+
+```sh
+cmake -S . -B build
+cmake --build build
+```
+
