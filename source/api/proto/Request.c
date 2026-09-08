@@ -4,7 +4,6 @@
 #include "mpack/mpack-platform.h"
 #include "mpack/mpack-reader.h"
 #include "mpack/mpack-writer.h"
-#include "api/proto/MessagePackRPC.h"
 #include "RawBuffer.h"
 
 #include <stddef.h>

@@ -1,10 +1,10 @@
 #ifndef PROTO_RESPONSE_H
 #define PROTO_RESPONSE_H
 
-#include "MessagePackRPC.h"
+#include "msgpack/MessagePackRPC.h"
 #include "RawBuffer.h"
 #include "Result.h"
-#include "api/proto/Object.h"
+#include "msgpack/Object.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

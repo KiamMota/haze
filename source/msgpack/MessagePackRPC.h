@@ -1,5 +1,5 @@
-#ifndef HAZE_SERVER_MESSAGE_H
-#define HAZE_SERVER_MESSAGE_H
+#ifndef MSGPACK_TYPES_H
+#define MSGPACK_TYPES_H
 
 #include <stdbool.h>
 #include <stdint.h>

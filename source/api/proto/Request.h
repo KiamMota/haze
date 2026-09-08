@@ -2,9 +2,9 @@
 #ifndef HAZE_SERVER_REQUEST_H
 #define HAZE_SERVER_REQUEST_H
 
-#include "MessagePackRPC.h"
+#include "msgpack/MessagePackRPC.h"
 #include "RawBuffer.h"
-#include "api/proto/Object.h"
+#include "msgpack/Object.h"
 
 #include <stdbool.h>
 #include <stddef.h>
