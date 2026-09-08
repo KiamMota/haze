@@ -1,6 +1,6 @@
 #include "Response.h"
-#include "HazeLog.h"
 #include "Result.h"
+#include "logc/log.h"
 #include "mpack/mpack-common.h"
 #include "mpack/mpack-expect.h"
 #include "mpack/mpack-reader.h"
@@ -232,7 +232,7 @@ RawBuffer *ResponseMarshal(Response *s) {
 
   mpack_error_t error = mpack_writer_destroy(&writer);
   if (error != mpack_ok) {
-    HazeLogError("ResponseMarshal failed: %s", mpack_error_to_string(error));
+    log_error("ResponseMarshal failed: %s", mpack_error_to_string(error));
     if (data) {
       free(data);
     }

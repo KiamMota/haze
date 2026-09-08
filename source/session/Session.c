@@ -1,8 +1,5 @@
 #include "Session.h"
-#include "HazePaths.h"
 #include "audio/SampleList.h"
-#include "fs/File.h"
-#include "fs/Path.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,12 +48,6 @@ Session *SessionNew(const char *session_name) {
     s->session_name = strdup(session_name);
 
   s->SampleList = SampleListNew();
-
-   Path* log_path = PathJoin(PathStr(HazePathsInstance->HazeLogs), s->session_name, NULL);
-
-  s->log_file = FileOpen(log_path, FILE_MODE_WRITE_UPDATE);
-  PathFree(&log_path);
-
   return s;
 }
 

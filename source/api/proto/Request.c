@@ -1,5 +1,5 @@
 #include "Request.h"
-#include "HazeLog.h"
+#include "logc/log.h"
 #include "mpack/mpack-common.h"
 #include "mpack/mpack-platform.h"
 #include "mpack/mpack-reader.h"
@@ -163,7 +163,7 @@ RawBuffer *RequestMarshal(Request *request) {
 
   mpack_writer_init_growable(&writer, &data, &size);
   if (mpack_writer_error(&writer) != mpack_ok) {
-    HazeLogError("RequestMarshal init failed: %s",
+    log_error("RequestMarshal init failed: %s",
                  mpack_error_to_string(mpack_writer_error(&writer)));
     return NULL;
   }
@@ -194,7 +194,7 @@ RawBuffer *RequestMarshal(Request *request) {
 
   mpack_error_t error = mpack_writer_destroy(&writer);
   if (error != mpack_ok) {
-    HazeLogError("RequestMarshal failed: %s", mpack_error_to_string(error));
+    log_error("RequestMarshal failed: %s", mpack_error_to_string(error));
     if (data) {
       MPACK_FREE(data);
     }
@@ -362,7 +362,7 @@ Request *RequestUnmarshal(RawBuffer *b) {
 
 fail:
   if (mpack_reader_error(&reader) != mpack_ok) {
-    HazeLogError("MPack Reader Error: %s",
+    log_error("MPack Reader Error: %s",
                  mpack_error_to_string(mpack_reader_error(&reader)));
   }
 

@@ -1,7 +1,6 @@
 #ifndef SESSION_H
 #define SESSION_H
 
-#include "fs/File.h"
 #include "audio/SampleList.h"
 #include <stdbool.h>
 #include <time.h>
@@ -11,7 +10,7 @@ typedef struct {
   char* project_path;
   time_t created_at;
   time_t working_time;
-  File* log_file;
+  FILE* log_file;
   SampleList *SampleList;
 } Session;
 

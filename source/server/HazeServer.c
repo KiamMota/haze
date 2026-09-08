@@ -1,5 +1,5 @@
 #include "HazeServer.h"
-#include "HazeLog.h"
+#include "logc/log.h"
 #include "HazeServerDispatcher.h"
 #include "RawBuffer.h"
 #include <stddef.h>
@@ -51,7 +51,6 @@ static void haze_on_write_done(uv_write_t *req, int status) {
   haze_write_req_t *wr = (haze_write_req_t *)req;
 
   if (status < 0) {
-    HazeLogWarn("Write error: %s", uv_strerror(status));
     if (wr->stream && !uv_is_closing((uv_handle_t *)wr->stream)) {
       uv_close((uv_handle_t *)wr->stream, haze_on_close);
     }
@@ -107,7 +106,7 @@ static void haze_on_read(uv_stream_t *stream,
 
     if (nread < 0) {
         if (nread != UV_EOF) {
-            HazeLogWarn(
+            log_warn(
                 "Read error: %s",
                 uv_err_name((int)nread)
             );
@@ -137,7 +136,7 @@ static void haze_on_read(uv_stream_t *stream,
         char *new_buffer = realloc(conn->buffer, new_cap);
 
         if (!new_buffer) {
-            HazeLogError("ON ReAD",
+            log_error("ON ReAD",
                 "Failed to resize connection buffer"
             );
 
@@ -190,7 +189,7 @@ static void haze_on_read(uv_stream_t *stream,
 
         if (consumed == 0 ||
             consumed > conn->buffer_len) {
-            HazeLogError("ON READ",
+            log_error("ON READ",
                 "Invalid API buffer consumption"
             );
 
@@ -213,7 +212,7 @@ static void haze_on_read(uv_stream_t *stream,
     }
 
     if (conn->buffer_len > 4 * 1024 * 1024) {
-        HazeLogWarn("SERVER",
+        log_error("SERVER",
             "Connection buffer exceeded 4 MB"
         );
 
@@ -225,7 +224,7 @@ static void haze_on_read(uv_stream_t *stream,
 }
 static void haze_on_connect(uv_stream_t *server, int status) {
   if (status < 0) {
-    HazeLogError("ON CONNECT", "connect error: %s", uv_strerror(status));
+    log_error("ON CONNECT", "connect error: %s", uv_strerror(status));
     return;
   }
 
