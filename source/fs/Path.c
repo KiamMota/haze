@@ -1,6 +1,5 @@
 #include "Path.h"
 #include "HazeMacros.h"
-#include <linux/limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -32,56 +31,88 @@ void PathFree(Path **path) {
 }
 
 Path *PathJoin(const char *first, ...) {
-    if (!first)
-        return NULL;
+  if (!first)
+    return NULL;
 
-    va_list args;
+  va_list args;
 
-    va_start(args, first);
-    size_t total_len = strlen(first);
-    
-    const char *part = va_arg(args, const char *);
-    while (part != NULL) {
-        total_len += 1 + strlen(part); // +1 para a barra '/'
-        part = va_arg(args, const char *);
-    }
-    va_end(args);
+  va_start(args, first);
+  size_t total_len = strlen(first);
 
-    char *combined = malloc(total_len + 1);
-    if (!combined)
-        return NULL;
-
-    strcpy(combined, first);
-    va_start(args, first);
+  const char *part = va_arg(args, const char *);
+  while (part != NULL) {
+    total_len += 1 + strlen(part); // +1 para a barra '/'
     part = va_arg(args, const char *);
-    while (part != NULL) {
-      #if WINDOWS
-        strcat(combined, "\\");      
-      #else  
-        strcat(combined, "/");
-      #endif
-        strcat(combined, part);
-        part = va_arg(args, const char *);
-    }
-    va_end(args);
+  }
+  va_end(args);
 
-    Path *new_path = malloc(sizeof(Path));
-    if (!new_path) {
-        free(combined);
-        return NULL;
-    }
+  char *combined = malloc(total_len + 1);
+  if (!combined)
+    return NULL;
 
-    new_path->path = combined;
-    return new_path;
+  strcpy(combined, first);
+  va_start(args, first);
+  part = va_arg(args, const char *);
+  while (part != NULL) {
+#if WINDOWS
+    strcat(combined, "\\");
+#else
+    strcat(combined, "/");
+#endif
+    strcat(combined, part);
+    part = va_arg(args, const char *);
+  }
+  va_end(args);
+
+  Path *new_path = malloc(sizeof(Path));
+  if (!new_path) {
+    free(combined);
+    return NULL;
+  }
+
+  new_path->path = combined;
+  return new_path;
 }
+#ifndef PATH_MAX
+#define PATH_MAX 4016
+#endif
 
 Path *PathAbs(const char *path) {
+  if (!path)
+    return NULL;
+
+#ifdef _WIN32
+  DWORD size = GetFullPathNameA(path, 0, NULL, NULL);
+
+  if (size == 0)
+    return NULL;
+
+  char *resolved = malloc(size);
+
+  if (!resolved)
+    return NULL;
+
+  DWORD written = GetFullPathNameA(path, size, resolved, NULL);
+
+  if (written == 0 || written >= size) {
+    free(resolved);
+    return NULL;
+  }
+
+  Path *result = PathNew(resolved);
+
+  free(resolved);
+
+  return result;
+
+#else
   char resolved[PATH_MAX];
 
   if (realpath(path, resolved) == NULL)
     return NULL;
 
   return PathNew(resolved);
+#endif
 }
 
 Path *PathHome(void) {
@@ -108,15 +139,14 @@ Path *PathHome(void) {
 }
 
 const char *PathStr(const Path *p) {
-  if (PathIsNullOrEmpty(p)) return NULL;
+  if (PathIsNullOrEmpty(p))
+    return NULL;
 
   return p->path;
 }
 
-bool PathIsNullOrEmpty(const Path* path) {
-    return path == NULL ||
-           path->path == NULL ||
-           path->path[0] == '\0';
+bool PathIsNullOrEmpty(const Path *path) {
+  return path == NULL || path->path == NULL || path->path[0] == '\0';
 }
 
 bool PathExists(const Path *path) {

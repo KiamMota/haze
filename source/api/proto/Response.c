@@ -1,5 +1,6 @@
 #include "Response.h"
 #include "HazeLog.h"
+#include "Result.h"
 #include "mpack/mpack-common.h"
 #include "mpack/mpack-expect.h"
 #include "mpack/mpack-reader.h"
@@ -322,7 +323,7 @@ bool ResponseFree(Response **response) {
 }
 
 
-Response *ResponseCreateStrResult(uint32_t msgid, const char *result) {
+Response *ResponseCreateString(uint32_t msgid, const char *result) {
   Response *resp = ResponseNew();
   if (!resp)
     return NULL;
@@ -389,4 +390,30 @@ Response* ResponseCreateNilResult(uint32_t msgid) {
   ResponseSetResultObject(resp, ObjectCreateNil());
   return resp; 
 
+}
+
+Response *ResponseCreateResult(uint32_t msgid, Result res) {
+  Response *resp = ResponseNew();
+  if (!resp)
+    return NULL;
+
+  ResponseSetMsgId(resp, msgid);
+
+  if (ResultIsOk(res)) {
+    ResponseSetResultObject(resp, ObjectCreateNil());
+    return resp;
+  }
+
+  ResponseSetResultObject(resp, ObjectCreateStr(res.msg));
+  return resp;
+}
+
+Response* ResponseCreateInt(uint32_t msgid, int64_t value) {
+  Response* resp = ResponseNew();
+  if(!resp) return NULL;
+
+  ResponseSetMsgId(resp, msgid);
+
+  ResponseSetResultObject(resp, ObjectCreateInt(value));
+  return resp;
 }

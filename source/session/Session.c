@@ -13,7 +13,7 @@ Session *SessionInstance;
 
 #define NAME_MAX 15
 #define CLARA_NAME 67 + 76 + 65 + 82 + 65
-static const char *session_name_random(void) {
+static  char *session_name_random(void) {
   srand(CLARA_NAME ^ (unsigned int)time(NULL));
   const char *first[NAME_MAX] = {
       "goofball", "biscuit", "wombat", "noodle", "badger",

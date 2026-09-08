@@ -3,6 +3,7 @@
 
 #include "MessagePackRPC.h"
 #include "RawBuffer.h"
+#include "Result.h"
 #include "api/proto/Object.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -41,10 +42,12 @@ bool ResponseSetErrorObject(Response *s, Object *error);
 bool ResponseSetMsgId(Response *s, uint32_t msgid);
 
 /* Constructors utilitários */
-Response *ResponseCreateStrResult(uint32_t msgid, const char *result);
+Response *ResponseCreateString(uint32_t msgid, const char *result);
 Response *ResponseCreateStrArrayResult(uint32_t msgid, const char **vec);
 Response *ResponseCreateError(uint32_t msgid, const char *err);
 Response* ResponseCreateNilResult(uint32_t msgid);
 Response* ResponseCreateOk(uint32_t msgid, void* v);
+Response* ResponseCreateResult(uint32_t msgid, Result res);
+Response* ResponseCreateInt(uint32_t msgid, int64_t value);
 
 #endif /* PROTO_RESPONSE_H */

@@ -1,36 +1,87 @@
-#include "Result.h"
-#include "api/Route.h"
-#include "api/functions/Funcs.h"
+#include "api/functions/FnSampleList.h"
+#include "api/functions/FnSession.h"
 #include "api/proto/Object.h"
 #include "api/proto/Request.h"
 #include "api/proto/Response.h"
-#include "proto/Request.h"
 
-Response* DispatchRPCMessage(Request* rq) {
-    if (!rq) {
-        return ResponseCreateError(0, "Invalid request.");
+#include <stdint.h>
+#include <string.h>
+
+Response *DispatchRPCMessage(Request *rq) {
+  if (!rq) {
+    return ResponseCreateError(0, "Invalid request.");
+  }
+
+  const char *method_name = RequestMethod(rq);
+  uint32_t msgid = RequestMsgId(rq);
+
+  if (!method_name) {
+    return ResponseCreateError(msgid, "Method not specified.");
+  }
+
+  if (strcmp(method_name, "session/init") == 0) {
+    if (RequestParamCount(rq) != 0) {
+      return ResponseCreateError(msgid, "Expected 0 parameters.");
     }
 
-    const char* method_name = RequestMethod(rq);
-    if (!method_name) {
-        return ResponseCreateError(RequestMsgId(rq), "Method not specified.");
+    return ResponseCreateResult(msgid, FnSessionInit());
+  }
+
+  if (strcmp(method_name, "session/create") == 0) {
+    if (RequestParamCount(rq) != 1) {
+      return ResponseCreateError(msgid, "Expected 1 parameter.");
     }
 
-    static const Route routes[] = {
-        { "session/init",         haze_session_init },
-        { "session/create",       haze_session_create },
-        { "session/get_name",     haze_session_get_name },
-        { "session/get_worktime", haze_session_get_working_time},
-        { "sample/import",        haze_sample_list_import_sample },
-        { "sample/play",          wrap_haze_sample_play },
-        { NULL,                   NULL }
-    };
+    Object *obj = RequestParamGet(rq, 0);
 
-    for (int i = 0; routes[i].name != NULL; i++) {
-        if (strcmp(routes[i].name, method_name) == 0) {
-            return routes[i].handler(rq);
-        }
+    if (!obj) {
+      return ResponseCreateError(msgid, "Invalid parameter.");
     }
 
-    return ResponseCreateError(RequestMsgId(rq), "Method not found.");
+    ObjectValue value = ObjectGetValue(obj);
+
+    if (!value.str_value) {
+      return ResponseCreateError(msgid, "Invalid session name.");
+    }
+
+    return ResponseCreateResult(msgid, FnSessionCreate(value.str_value));
+  }
+
+  if (strcmp(method_name, "session/get_name") == 0) {
+    if (RequestParamCount(rq) != 0) {
+      return ResponseCreateError(msgid, "Expected 0 parameters.");
+    }
+
+    return ResponseCreateString(msgid, FnSessionGetName());
+  }
+
+  if (strcmp(method_name, "session/get_working_time") == 0) {
+    if (RequestParamCount(rq) != 0) {
+      return ResponseCreateError(msgid, "Expected 0 parameters.");
+    }
+
+    return ResponseCreateInt(msgid, (int64_t)FnSessionGetWorkingTime());
+  }
+
+  if (strcmp(method_name, "sample_list/import") == 0) {
+    if (RequestParamCount(rq) != 1) {
+      return ResponseCreateError(msgid, "Expected 1 parameter.");
+    }
+
+    Object *obj = RequestParamGet(rq, 0);
+
+    if (!obj) {
+      return ResponseCreateError(msgid, "Invalid parameter.");
+    }
+
+    ObjectValue value = ObjectGetValue(obj);
+
+    if (!value.str_value) {
+      return ResponseCreateError(msgid, "Invalid sample path.");
+    }
+
+    return ResponseCreateResult(msgid, FnSampleListImportSample(value.str_value));
+  }
+
+  return ResponseCreateError(msgid, "Method not found.");
 }
