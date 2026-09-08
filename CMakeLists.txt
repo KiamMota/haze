@@ -1,4 +1,3 @@
-```cmake
 cmake_minimum_required(VERSION 3.20)
 
 project(haze
@@ -369,4 +368,3 @@ install(
     TARGETS haze
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-```
