@@ -2,12 +2,12 @@ package main
 
 import (
 	"hazepkg/cli"
-	"hazepkg/fs"
+	"hazepkg/hazefs"
 	"os"
 )
 
 func main() {
-	fs.PathsInstance.InitPaths()
+	hazefs.PathsInstance.InitPaths()
 
 	args := os.Args[1:]
 

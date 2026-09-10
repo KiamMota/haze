@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"hazepkg/fs"
+	"hazepkg/hazefs"
 	"strings"
 )
 
-func ProcessStatus(instances []fs.InstanceState) string {
+func ProcessStatus(instances []hazefs.InstanceState) string {
 	var b strings.Builder
 
 	b.WriteString("PID     SESSION              PORT    STATUS\n")

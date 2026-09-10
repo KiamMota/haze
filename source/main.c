@@ -1,7 +1,9 @@
-#include "logc/log.h"
 #include "HazeVersion.h"
+#include "Result.h"
 #include "audio/HazeEngine.h"
 #include "fs/Paths.h"
+#include "fs/Running.h"
+#include "logc/log.h"
 #include "server/HazeServer.h"
 #include "session/Session.h"
 #include <assert.h>
@@ -30,15 +32,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  // log configuration (exemplo opcional para arquivo e terminal)
-  FILE *log_file = fopen("haze.log", "w");
-  if (log_file) {
-    log_add_fp(log_file, LOG_INFO);
-  }
+  log_info("[%s] Initializing Haze service (version %s)...", MODULE_MAIN,
+           HAZE_VERSION_STR);
 
-  log_info("[%s] Initializing Haze service (version %s)...", MODULE_MAIN, HAZE_VERSION_STR);
-
-  log_info("[%s] Loading application paths...", MODULE_MAIN);
   PathsInstance = PathsNew();
   assert(PathsInstance);
   if (!PathsInstance) {
@@ -46,25 +42,22 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  log_info("[%s] Initializing session instance...", MODULE_MAIN);
   SessionInstance = SessionNew(NULL);
-  log_info("[%s] Session initialized. Name: %s", MODULE_MAIN, SessionGetName(SessionInstance));
+  log_info("[%s] Session initialized. Name: %s", MODULE_MAIN,
+           SessionGetName(SessionInstance));
 
-  log_info("[%s] Starting audio engine...", MODULE_MAIN);
   if (!HazeEngineInit()) {
     log_error("[%s] Failed to start audio engine.", MODULE_MAIN);
     return 1;
   }
   log_info("[%s] Audio engine started successfully.", MODULE_MAIN);
 
-  log_info("[%s] Starting headless Haze environment...", MODULE_MAIN);
-  log_info("[%s] Preparing to start Haze Server...", MODULE_MAIN);
-
-  int port = 7192;
+  Running *main_running = RunningNew(SessionGetName(SessionInstance),
+                                     RunningGetLastPort(), RN_STATUS_UP);
+  int port = RunningGetLastPort();
   HazeServer *mainServer = NULL;
 
   while (1) {
-    log_info("[%s] Attempting to create Haze Server instance on port %d...", MODULE_MAIN, port);
     mainServer = HazeServerNew(NULL, port);
 
     if (!mainServer) {
@@ -72,11 +65,11 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    log_info("[%s] Starting Haze Server on port %d...", MODULE_MAIN, port);
     int err = HazeServerStart(mainServer);
 
     if (err == UV_EADDRINUSE || err == UV_EACCES) {
-      log_warn("[%s] Port %d is unavailable (%s), trying port %d...", MODULE_MAIN, port, uv_strerror(err), port + 1);
+      log_warn("[%s] Port %d is unavailable (%s), trying port %d...",
+               MODULE_MAIN, port, uv_strerror(err), port + 1);
 
       HazeServerFree(&mainServer);
       port++;
@@ -84,20 +77,25 @@ int main(int argc, char **argv) {
     }
 
     if (err != 0) {
-      log_error("[%s] Failed to start server: %s", MODULE_MAIN, uv_strerror(err));
+      log_error("[%s] Failed to start server: %s", MODULE_MAIN,
+                uv_strerror(err));
       HazeServerFree(&mainServer);
       return 1;
     }
 
-    log_info("[%s] Haze Server successfully started on %s:%d", MODULE_MAIN, HazeServerAddress(mainServer), HazeServerPort(mainServer));
+    log_info("[%s] Haze Server successfully started on %s:%d", MODULE_MAIN,
+             HazeServerAddress(mainServer), HazeServerPort(mainServer));
     break;
   }
 
-  log_info("[%s] Entering main event loop (HazeServerRun)...", MODULE_MAIN);
+  Result res = RunningWriteFile(main_running);
+  if (!ResultIsOk(res))
+    log_error("Failed to write .running: %s", res.msg);
+  RunningFree(&main_running);
+
   HazeServerRun(mainServer);
 
   log_warn("[%s] HazeServerRun returned unexpectedly.", MODULE_MAIN);
-  log_info("[%s] Server process terminating, cleaning up resources...", MODULE_MAIN);
   HazeServerFree(&mainServer);
 
   log_info("[%s] Haze service shut down gracefully.", MODULE_MAIN);

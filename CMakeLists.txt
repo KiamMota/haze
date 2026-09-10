@@ -225,18 +225,18 @@ endif()
 # ============================================================
 
 add_executable(
-    haze
+    hazec
     ${HAZE_CORE_SOURCES}
 )
 
 target_include_directories(
-    haze
+    hazec
     PRIVATE
     "${HAZE_SOURCE_DIR}"
 )
 
 target_link_libraries(
-    haze
+    hazec
     PRIVATE
     uv
 )
@@ -244,7 +244,7 @@ target_link_libraries(
 if(TARGET haze_third_party)
 
     target_link_libraries(
-        haze
+        hazec
         PRIVATE
         haze_third_party
     )
@@ -265,7 +265,7 @@ endif()
 if(WIN32)
 
     set_target_properties(
-        haze
+        hazec
         PROPERTIES
         WIN32_EXECUTABLE FALSE
     )
@@ -288,7 +288,7 @@ if(UNIX AND NOT APPLE)
     )
 
     target_compile_definitions(
-        haze
+        hazec
         PRIVATE
         _XOPEN_SOURCE=700
     )
@@ -309,7 +309,7 @@ if(MSVC)
     )
 
     target_compile_options(
-        haze
+        hazec
         PRIVATE
         /W4
     )
@@ -325,7 +325,7 @@ else()
     )
 
     target_compile_options(
-        haze
+        hazec
         PRIVATE
         -Wall
         -Wextra
@@ -365,6 +365,6 @@ message(STATUS "")
 include(GNUInstallDirs)
 
 install(
-    TARGETS haze
+    TARGETS hazec
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

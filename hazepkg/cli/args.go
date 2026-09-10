@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 	"hazepkg/cmd"
-	"hazepkg/fs"
+	"hazepkg/hazefs"
 )
 
 func TraitArgs(args []string) {
@@ -15,7 +15,7 @@ func TraitArgs(args []string) {
 	switch args[0] {
 	case "ps":
 		print("\n")
-		instances, err := fs.PathsInstance.ReadRunningFile()
+		instances, err := hazefs.PathsInstance.ReadRunningFile()
 		if err != nil {
 			fmt.Println(err)
 			return

@@ -1,5 +1,6 @@
 #include "Paths.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,82 +8,103 @@
 #ifdef _WIN32
 #include <io.h>
 #define PATHS_EXISTS(path) (_access(path, 0) == 0)
+#include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#define PATH_SEP "\\"
 #else
 #include <unistd.h>
 #define PATHS_EXISTS(path) (access(path, F_OK) == 0)
+#include <sys/stat.h>
+#define MKDIR(path) mkdir(path, 0755)
+#define PATH_SEP "/"
 #endif
 
-Paths* PathsInstance;
+Paths *PathsInstance = NULL;
 
 static char *JoinPath(const char *a, const char *b) {
-  size_t len = strlen(a) + strlen(b) + 2;
-  char *path = malloc(len);
+    size_t len = strlen(a) + strlen(PATH_SEP) + strlen(b) + 1;
+    char *path = malloc(len);
+    if (!path)
+        return NULL;
 
-  if (!path)
-    return NULL;
+    snprintf(path, len, "%s%s%s", a, PATH_SEP, b);
+    return path;
+}
 
-  snprintf(path, len, "%s/%s", a, b);
+static const char *GetHome(void) {
+#ifdef _WIN32
+    return getenv("USERPROFILE");
+#else
+    return getenv("HOME");
+#endif
+}
 
-  return path;
+static int EnsureDir(const char *path) {
+    if (MKDIR(path) == 0)
+        return 0;
+    if (errno == EEXIST)
+        return 0;
+    return -1;
 }
 
 Paths *PathsNew(void) {
-  Paths *p = malloc(sizeof(Paths));
+    const char *home = GetHome();
+    if (!home)
+        return NULL;
 
-  if (!p)
-    return NULL;
+    Paths *p = malloc(sizeof(Paths));
+    if (!p)
+        return NULL;
 
-  const char *home = getenv("HOME");
+    p->home = strdup(home);
+    if (!p->home) {
+        free(p);
+        return NULL;
+    }
 
-  if (!home) {
-    free(p);
-    return NULL;
-  }
+    char *base = JoinPath(home, ".haze");
+    if (!base) {
+        free((void *)p->home);
+        free(p);
+        return NULL;
+    }
+    EnsureDir(base);
 
-  p->home = home;
+    p->config = JoinPath(base, "config");
+    p->data = JoinPath(base, "data");
+    p->cache = JoinPath(base, "cache");
+    p->projects = JoinPath(base, "projects");
+    p->samples = JoinPath(base, "samples");
+    p->themes = JoinPath(base, "themes");
+    p->plugins = JoinPath(base, "plugins");
+    p->logs = JoinPath(base, "logs");
+    p->running = JoinPath(base, ".running");
 
-  char *config = JoinPath(home, ".config/haze");
-  char *data = JoinPath(home, ".local/share/haze");
-  char *cache = JoinPath(home, ".cache/haze");
+    free(base);
 
-  if (!config || !data || !cache) {
-    free(config);
-    free(data);
-    free(cache);
-    free(p);
-    return NULL;
-  }
+    // Cria os diretórios principais necessários
+    EnsureDir(p->config);
+    EnsureDir(p->data);
+    EnsureDir(p->cache);
+    EnsureDir(p->projects);
+    EnsureDir(p->samples);
+    EnsureDir(p->themes);
+    EnsureDir(p->plugins);
+    EnsureDir(p->logs);
 
-  p->config = config;
-  p->data = data;
-  p->cache = cache;
-
-  p->projects = JoinPath(data, "projects");
-  p->samples = JoinPath(data, "samples");
-  p->themes = JoinPath(data, "themes");
-  p->plugins = JoinPath(data, "plugins");
-  p->logs = JoinPath(data, "logs");
-  p->running = JoinPath(data, ".running");
-
-  if (!p->projects || !p->samples || !p->themes || !p->plugins || !p->logs) {
-    PathsFree(&p);
-    return NULL;
-  }
-
-  return p;
+    return p;
 }
 
-void PathsFree(Paths **pt)
-{
+void PathsFree(Paths **pt) {
     if (!pt || !*pt)
         return;
 
     Paths *p = *pt;
 
+    free((void *)p->home);
     free((void *)p->config);
     free((void *)p->data);
     free((void *)p->cache);
-
     free((void *)p->projects);
     free((void *)p->samples);
     free((void *)p->themes);
@@ -91,60 +113,45 @@ void PathsFree(Paths **pt)
     free((void *)p->running);
 
     free(p);
-
     *pt = NULL;
 }
 
-
-bool PathsExists(Paths *p, PathsEnum path)
-{
+bool PathsExists(Paths *p, PathsEnum path) {
     if (!p)
         return false;
 
     const char *value = PathsGet(p, path);
-
     if (!value)
         return false;
 
     return PATHS_EXISTS(value);
 }
 
-const char* PathsGet(Paths* p, PathsEnum path)
-{
+const char *PathsGet(Paths *p, PathsEnum path) {
     if (!p)
         return NULL;
 
     switch (path) {
         case PATHS_HOME:
             return p->home;
-
         case PATHS_CONFIG:
             return p->config;
-
         case PATHS_DATA:
             return p->data;
-
         case PATHS_CACHE:
             return p->cache;
-
         case PATHS_PROJECTS:
             return p->projects;
-
         case PATHS_SAMPLES:
             return p->samples;
-
         case PATHS_THEMES:
             return p->themes;
-
         case PATHS_PLUGINS:
             return p->plugins;
-
         case PATHS_LOGS:
             return p->logs;
-
         case PATHS_RUNNING:
             return p->running;
-
         default:
             return NULL;
     }

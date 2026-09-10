@@ -1,4 +1,4 @@
-package fs
+package hazefs
 
 import (
 	"os"
@@ -35,7 +35,7 @@ func (p *Paths) InitPaths() error {
 	p.CommunityPath = filepath.Join(p.RootHazePath, "community")
 	p.LogsPath = filepath.Join(p.RootHazePath, "logs")
 
-	p.RunningFile = filepath.Join(p.RootHazePath, ".running.mp")
+	p.RunningFile = filepath.Join(p.RootHazePath, ".running")
 
 	return nil
 }

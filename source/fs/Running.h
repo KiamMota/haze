@@ -15,9 +15,12 @@ typedef struct {
   const char* session_name;
   unsigned short port;
   Status status;
-  int timestamp;
+  int created_at;
 } Running;
 
-Result RunningWriteFile(const char* session_name, unsigned short port, Status st);
+Running* RunningNew(const char* session_name, unsigned short port, Status st);
+Running* RunningFree(Running** r);
+Result RunningWriteFile(Running* r);
+unsigned short RunningGetLastPort(void);
 
 #endif
