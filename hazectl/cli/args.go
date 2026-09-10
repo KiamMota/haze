@@ -2,8 +2,8 @@ package cli
 
 import (
 	"fmt"
-	"hazepkg/cmd"
-	"hazepkg/hazefs"
+	"hazectl/cmd"
+	"hazectl/hazefs"
 )
 
 func TraitArgs(args []string) {

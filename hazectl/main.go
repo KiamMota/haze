@@ -1,8 +1,8 @@
 package main
 
 import (
-	"hazepkg/cli"
-	"hazepkg/hazefs"
+	"hazectl/cli"
+	"hazectl/hazefs"
 	"os"
 )
 

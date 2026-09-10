@@ -4,7 +4,7 @@ import "fmt"
 
 func Help() {
 	fmt.Println()
-	Print("Haze (awesome) Package Manager")
+	Print("Haze (awesome) Manager Control")
 	fmt.Println()
 	fmt.Println("Usage:")
 	fmt.Println("  hazep <command> [package]")
