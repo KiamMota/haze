@@ -10,8 +10,6 @@
 #include <string.h>
 #include <uv.h>
 
-#define MODULE_MAIN "MAIN"
-
 void VersionMessage(void) { fprintf(stdout, "haze %s\n", HAZE_VERSION_STR); }
 
 int TraitArgs(int argc, char **argv) {
@@ -37,20 +35,19 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  log_info("[%s] Initializing Haze service (version %s)...", MODULE_MAIN,
-           HAZE_VERSION_STR);
+  log_info("Initializing Haze service (version %s)...", HAZE_VERSION_STR);
 
   SessionInstance = SessionNew(NULL);
   PathsInstance = PathsNew();
 
   if (!HazeEngineInit()) {
-    log_error("[%s] Failed to start audio engine.", MODULE_MAIN);
+    log_error("Failed to start audio engine.");
     return 1;
   }
 
-  log_info("[%s] Session initialized. Name: %s", MODULE_MAIN,
+  log_info("Session initialized. Name: %s",
            SessionGetName(SessionInstance));
-  log_info("[%s] Audio engine started successfully.", MODULE_MAIN);
+  log_info("Audio engine started successfully.");
 
   int port = InstanceRegistryGetLastPort() + 1;
   HazeServer *mainServer = NULL;
@@ -60,15 +57,15 @@ int main(int argc, char **argv) {
     mainServer = HazeServerNew(NULL, port);
 
     if (!mainServer) {
-      log_error("[%s] Failed to create Haze Server instance.", MODULE_MAIN);
+      log_error("Failed to create Haze Server instance.");
       return 1;
     }
 
     int err = HazeServerStart(mainServer);
 
     if (err == UV_EADDRINUSE || err == UV_EACCES) {
-      log_warn("[%s] Port %d is unavailable (%s), trying port %d...",
-               MODULE_MAIN, port, uv_strerror(err), port + 1);
+      log_warn("Port %d is unavailable (%s), trying port %d...",
+               port, uv_strerror(err), port + 1);
 
       HazeServerFree(&mainServer);
       port++;
@@ -76,13 +73,12 @@ int main(int argc, char **argv) {
     }
 
     if (err != 0) {
-      log_error("[%s] Failed to start server: %s", MODULE_MAIN,
-                uv_strerror(err));
+      log_error("Failed to start server: %s", uv_strerror(err));
       HazeServerFree(&mainServer);
       return 1;
     }
 
-    log_info("[%s] Haze Server successfully started on %s:%d", MODULE_MAIN,
+    log_info("Haze Server successfully started on %s:%d",
              HazeServerAddress(mainServer), HazeServerPort(mainServer));
     break; // Sai do loop assim que conectar com sucesso
   }
@@ -98,7 +94,7 @@ int main(int argc, char **argv) {
   HazeServerRun(mainServer);
 
   // 4. Executado somente após o sinal mandar parar o loop (uv_stop)
-  log_info("[%s] Shutting down and cleaning up resources...", MODULE_MAIN);
+  log_info("Shutting down and cleaning up resources...");
 
   if (InstanceRegInstance) {
     InstanceRegistryRemove(InstanceRegInstance);
@@ -107,6 +103,6 @@ int main(int argc, char **argv) {
 
   HazeServerFree(&mainServer);
 
-  log_info("[%s] Haze service shut down gracefully.", MODULE_MAIN);
+  log_info("Haze service shut down gracefully.");
   return 0;
 }
