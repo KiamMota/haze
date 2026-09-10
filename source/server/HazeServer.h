@@ -22,6 +22,7 @@ void           HazeServerStop(HazeServer *s);
 void           HazeServerRun(HazeServer *s);
 uint16_t       HazeServerPort(HazeServer *s);
 const char    *HazeServerAddress(HazeServer *s);
+int           HazeServerSetupSignals(HazeServer *s);
 
 EXPORT_CPP_END
 #endif

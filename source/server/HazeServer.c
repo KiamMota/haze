@@ -1,7 +1,7 @@
 #include "HazeServer.h"
-#include "logc/log.h"
 #include "HazeServerDispatcher.h"
 #include "RawBuffer.h"
+#include "logc/log.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,7 +15,7 @@
 
 typedef struct {
   uv_tcp_t handle;
-  
+
   // Buffer persistente para lidar com framing TCP
   char *buffer;
   size_t buffer_len;
@@ -30,13 +30,13 @@ typedef struct {
 
 static void haze_on_close(uv_handle_t *handle) {
   if (handle->data) {
-    HazeConn *conn = (HazeConn *)handle->data; 
-    handle->data = NULL; 
-    
+    HazeConn *conn = (HazeConn *)handle->data;
+    handle->data = NULL;
+
     if (conn->buffer) {
-        free(conn->buffer);
+      free(conn->buffer);
     }
-    free(conn);         
+    free(conn);
   }
 }
 
@@ -55,172 +55,149 @@ static void haze_on_write_done(uv_write_t *req, int status) {
       uv_close((uv_handle_t *)wr->stream, haze_on_close);
     }
   }
-  
+
   if (wr->data_to_free) {
     free(wr->data_to_free);
   }
-  
+
   free(wr);
 }
 
-void haze_send(uv_stream_t *stream, const void *data, size_t len) {
-    haze_write_req_t *req = malloc(sizeof(*req));
-    if (!req)
-        return;
 
-    void *data_copy = malloc(len);
-    if (!data_copy) {
-        free(req);
-        return;
-    }
+static void _OnSignal(uv_signal_t *handle, int signum) {
+  // Apenas o %d correspondente ao signum
+  log_info("Signal %d received, stopping loop...", signum);
 
-    memcpy(data_copy, data, len);
-
-    req->data_to_free = data_copy;
-    req->stream = stream;
-
-    uv_buf_t buf = uv_buf_init(
-        (char *)data_copy,
-        (unsigned int)len
-    );
-
-    int rc = uv_write(
-        (uv_write_t *)req,
-        stream,
-        &buf,
-        1,
-        haze_on_write_done
-    );
-
-    if (rc < 0) {
-        free(req->data_to_free);
-        free(req);
-    }
+  if (handle && handle->loop) {
+    uv_stop(handle->loop);
+  }
 }
 
-static void haze_on_read(uv_stream_t *stream,
-                         ssize_t nread,
-                         const uv_buf_t *buf)
-{
-    HazeConn *conn = (HazeConn *)stream->data;
+int HazeServerSetupSignals(HazeServer *server) {
+  if (!server) return -1;
 
-    if (nread < 0) {
-        if (nread != UV_EOF) {
-            log_warn(
-                "Read error: %s",
-                uv_err_name((int)nread)
-            );
-        }
+  uv_signal_t *sig = malloc(sizeof(uv_signal_t));
+  if (!sig) return -1;
 
-        free(buf->base);
-        uv_close((uv_handle_t *)stream, haze_on_close);
-        return;
+  sig->data = (void *)1; // Marca o handle como alocado dinamicamente
+
+  uv_signal_init(server->loop, sig);
+  uv_signal_start(sig, _OnSignal, SIGINT);
+
+  return 0;
+}
+
+
+void haze_send(uv_stream_t *stream, const void *data, size_t len) {
+  haze_write_req_t *req = malloc(sizeof(*req));
+  if (!req)
+    return;
+
+  void *data_copy = malloc(len);
+  if (!data_copy) {
+    free(req);
+    return;
+  }
+
+  memcpy(data_copy, data, len);
+
+  req->data_to_free = data_copy;
+  req->stream = stream;
+
+  uv_buf_t buf = uv_buf_init((char *)data_copy, (unsigned int)len);
+
+  int rc = uv_write((uv_write_t *)req, stream, &buf, 1, haze_on_write_done);
+
+  if (rc < 0) {
+    free(req->data_to_free);
+    free(req);
+  }
+}
+
+static void haze_on_read(uv_stream_t *stream, ssize_t nread,
+                         const uv_buf_t *buf) {
+  HazeConn *conn = (HazeConn *)stream->data;
+
+  if (nread < 0) {
+    if (nread != UV_EOF) {
+      log_warn("Read error: %s", uv_err_name((int)nread));
     }
-
-    if (nread == 0) {
-        free(buf->base);
-        return;
-    }
-
-    size_t new_len = conn->buffer_len + (size_t)nread;
-
-    if (new_len > conn->buffer_cap) {
-        size_t new_cap =
-            conn->buffer_cap == 0
-                ? 1024
-                : conn->buffer_cap;
-
-        while (new_cap < new_len)
-            new_cap *= 2;
-
-        char *new_buffer = realloc(conn->buffer, new_cap);
-
-        if (!new_buffer) {
-            log_error("ON ReAD",
-                "Failed to resize connection buffer"
-            );
-
-            free(buf->base);
-            uv_close(
-                (uv_handle_t *)stream,
-                haze_on_close
-            );
-            return;
-        }
-
-        conn->buffer = new_buffer;
-        conn->buffer_cap = new_cap;
-    }
-
-    memcpy(
-        conn->buffer + conn->buffer_len,
-        buf->base,
-        (size_t)nread
-    );
-
-    conn->buffer_len = new_len;
 
     free(buf->base);
+    uv_close((uv_handle_t *)stream, haze_on_close);
+    return;
+  }
 
-    /*
-     * O servidor não interpreta o conteúdo.
-     * Apenas entrega os bytes recebidos para a API.
-     */
-    while (conn->buffer_len > 0) {
-        RawBuffer buffer = RawBufferInit(
-            conn->buffer,
-            conn->buffer_len
-        );
+  if (nread == 0) {
+    free(buf->base);
+    return;
+  }
 
-        RawBuffer *response = HazeServerAPIDispatcher(&buffer);
+  size_t new_len = conn->buffer_len + (size_t)nread;
 
-        if (!response)
-            break;
+  if (new_len > conn->buffer_cap) {
+    size_t new_cap = conn->buffer_cap == 0 ? 1024 : conn->buffer_cap;
 
-        haze_send(
-            stream,
-            RawBufferData(response),
-            RawBufferLen(response)
-        );
+    while (new_cap < new_len)
+      new_cap *= 2;
 
-        RawBufferFree(&response);
+    char *new_buffer = realloc(conn->buffer, new_cap);
 
-        size_t consumed = buffer.len;
+    if (!new_buffer) {
+      log_error("ON ReAD", "Failed to resize connection buffer");
 
-        if (consumed == 0 ||
-            consumed > conn->buffer_len) {
-            log_error("ON READ",
-                "Invalid API buffer consumption"
-            );
-
-            uv_close(
-                (uv_handle_t *)stream,
-                haze_on_close
-            );
-            break;
-        }
-
-        conn->buffer_len -= consumed;
-
-        if (conn->buffer_len > 0) {
-            memmove(
-                conn->buffer,
-                conn->buffer + consumed,
-                conn->buffer_len
-            );
-        }
+      free(buf->base);
+      uv_close((uv_handle_t *)stream, haze_on_close);
+      return;
     }
 
-    if (conn->buffer_len > 4 * 1024 * 1024) {
-        log_error("SERVER",
-            "Connection buffer exceeded 4 MB"
-        );
+    conn->buffer = new_buffer;
+    conn->buffer_cap = new_cap;
+  }
 
-        uv_close(
-            (uv_handle_t *)stream,
-            haze_on_close
-        );
+  memcpy(conn->buffer + conn->buffer_len, buf->base, (size_t)nread);
+
+  conn->buffer_len = new_len;
+
+  free(buf->base);
+
+  /*
+   * O servidor não interpreta o conteúdo.
+   * Apenas entrega os bytes recebidos para a API.
+   */
+  while (conn->buffer_len > 0) {
+    RawBuffer buffer = RawBufferInit(conn->buffer, conn->buffer_len);
+
+    RawBuffer *response = HazeServerAPIDispatcher(&buffer);
+
+    if (!response)
+      break;
+
+    haze_send(stream, RawBufferData(response), RawBufferLen(response));
+
+    RawBufferFree(&response);
+
+    size_t consumed = buffer.len;
+
+    if (consumed == 0 || consumed > conn->buffer_len) {
+      log_error("ON READ", "Invalid API buffer consumption");
+
+      uv_close((uv_handle_t *)stream, haze_on_close);
+      break;
     }
+
+    conn->buffer_len -= consumed;
+
+    if (conn->buffer_len > 0) {
+      memmove(conn->buffer, conn->buffer + consumed, conn->buffer_len);
+    }
+  }
+
+  if (conn->buffer_len > 4 * 1024 * 1024) {
+    log_error("SERVER", "Connection buffer exceeded 4 MB");
+
+    uv_close((uv_handle_t *)stream, haze_on_close);
+  }
 }
 static void haze_on_connect(uv_stream_t *server, int status) {
   if (status < 0) {
@@ -229,7 +206,8 @@ static void haze_on_connect(uv_stream_t *server, int status) {
   }
 
   HazeConn *conn = calloc(1, sizeof(HazeConn));
-  if (!conn) return;
+  if (!conn)
+    return;
 
   int init_ret = uv_tcp_init(server->loop, &conn->handle);
   if (init_ret != 0) {
@@ -245,10 +223,12 @@ static void haze_on_connect(uv_stream_t *server, int status) {
     return;
   }
 
-  // ATIVAÇÃO DO NODELAY: Desativa o Algoritmo de Nagle para evitar o delay de 30ms em conexões persistentes
+  // ATIVAÇÃO DO NODELAY: Desativa o Algoritmo de Nagle para evitar o delay de
+  // 30ms em conexões persistentes
   uv_tcp_nodelay(&conn->handle, 1);
 
-  int read_ret = uv_read_start((uv_stream_t *)&conn->handle, haze_on_alloc, haze_on_read);
+  int read_ret =
+      uv_read_start((uv_stream_t *)&conn->handle, haze_on_alloc, haze_on_read);
   if (read_ret != 0) {
     uv_close((uv_handle_t *)&conn->handle, haze_on_close);
     return;
@@ -261,7 +241,8 @@ static void haze_on_connect(uv_stream_t *server, int status) {
 
 HazeServer *HazeServerNew(const char *addr, uint16_t port) {
   HazeServer *s = calloc(1, sizeof(HazeServer));
-  if (!s) return NULL;
+  if (!s)
+    return NULL;
 
   s->loop = uv_loop_new();
   s->port = port;
@@ -273,52 +254,79 @@ HazeServer *HazeServerNew(const char *addr, uint16_t port) {
 }
 
 int HazeServerStart(HazeServer *s) {
-  if (!s) return UV_EINVAL;
+  if (!s)
+    return UV_EINVAL;
 
   struct sockaddr_in bind_addr;
   uv_ip4_addr(s->addr, s->port, &bind_addr);
 
   int r = uv_tcp_bind(&s->tcp, (const struct sockaddr *)&bind_addr, 0);
-  if (r != 0) return r;
+  if (r != 0)
+    return r;
 
   r = uv_listen((uv_stream_t *)&s->tcp, 512, haze_on_connect);
   return r;
 }
 
 void HazeServerRun(HazeServer *s) {
-  if (!s) return;
+  if (!s)
+    return;
   uv_run(s->loop, UV_RUN_DEFAULT);
 }
 
 void HazeServerStop(HazeServer *s) {
-  if (!s) return;
+  if (!s)
+    return;
   uv_stop(s->loop);
 }
 
-void HazeServerFree(HazeServer **s_ptr) {
-  if (!s_ptr || !*s_ptr) return;
-  HazeServer *s = *s_ptr;
-
-  if (s->loop) {
-    uv_loop_close(s->loop);
-    free(s->loop);
+static void _OnHandleClose(uv_handle_t *handle) {
+  if (handle && handle->data == (void *)1) {
+    free(handle); // Libera apenas se foi alocado separadamente via malloc
   }
-  
-  if (s->addr) {
-      free((void*)s->addr);
+}
+
+static void _CloseWalkCb(uv_handle_t *handle, void *arg) {
+  (void)arg;
+  if (!uv_is_closing(handle)) {
+    uv_close(handle, _OnHandleClose);
+  }
+}
+
+void HazeServerFree(HazeServer **server_ptr) {
+  if (!server_ptr || !*server_ptr) return;
+
+  HazeServer *server = *server_ptr;
+
+  if (server->loop) {
+    uv_walk(server->loop, _CloseWalkCb, NULL);
+
+    while (uv_loop_close(server->loop) == UV_EBUSY) {
+      uv_run(server->loop, UV_RUN_ONCE);
+    }
+
+    free(server->loop);
+    server->loop = NULL;
   }
 
-  free(s);
-  *s_ptr = NULL;
+  // Libera o ponteiro da string alocada por strdup()
+  if (server->addr) { // Altere para o nome do campo se for server->host ou similar
+    free((void *)server->addr);
+    server->addr = NULL;
+  }
+
+  free(server);
+  *server_ptr = NULL;
 }
 
 uint16_t HazeServerPort(HazeServer *s) {
-  if (!s) return 0;
+  if (!s)
+    return 0;
   return s->port;
 }
 
 const char *HazeServerAddress(HazeServer *s) {
-  if (!s) return NULL;
+  if (!s)
+    return NULL;
   return s->addr;
 }
-

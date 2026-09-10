@@ -14,7 +14,7 @@ typedef struct {
   const char *themes;
   const char *plugins;
   const char *logs;
-  const char *running;
+  const char *instances;
 } Paths;
 
 typedef enum {
@@ -27,7 +27,7 @@ typedef enum {
   PATHS_THEMES,
   PATHS_PLUGINS,
   PATHS_LOGS,
-  PATHS_RUNNING,
+  PATHS_INSTANCES,
 } PathsEnum;
 
 extern Paths* PathsInstance;
@@ -35,6 +35,7 @@ extern Paths* PathsInstance;
 Paths *PathsNew(void);
 void PathsFree(Paths **pt);
 bool PathsExists(Paths* p, PathsEnum path);
+const char* PathsJoin(const char* path, ...);
 const char* PathsGet(Paths* p, PathsEnum path);
 
 #endif

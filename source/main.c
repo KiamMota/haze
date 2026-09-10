@@ -1,8 +1,7 @@
 #include "HazeVersion.h"
-#include "Result.h"
 #include "audio/HazeEngine.h"
+#include "fs/InstanceRegistry.h"
 #include "fs/Paths.h"
-#include "fs/Running.h"
 #include "logc/log.h"
 #include "server/HazeServer.h"
 #include "session/Session.h"
@@ -15,8 +14,7 @@
 
 void VersionMessage(void) { fprintf(stdout, "haze %s\n", HAZE_VERSION_STR); }
 
-int main(int argc, char **argv) {
-  // check arguments
+int TraitArgs(int argc, char **argv) {
   if (argc > 1) {
     const char *flag = argv[1];
     if (strlen(flag) == 1) {
@@ -31,32 +29,33 @@ int main(int argc, char **argv) {
       return 0;
     }
   }
+  return 1;
+}
+
+int main(int argc, char **argv) {
+  if (!TraitArgs(argc, argv)) {
+    return 0;
+  }
 
   log_info("[%s] Initializing Haze service (version %s)...", MODULE_MAIN,
            HAZE_VERSION_STR);
 
-  PathsInstance = PathsNew();
-  assert(PathsInstance);
-  if (!PathsInstance) {
-    log_error("[%s] Failed to load haze paths.", MODULE_MAIN);
-    return 1;
-  }
-
   SessionInstance = SessionNew(NULL);
-  log_info("[%s] Session initialized. Name: %s", MODULE_MAIN,
-           SessionGetName(SessionInstance));
+  PathsInstance = PathsNew();
 
   if (!HazeEngineInit()) {
     log_error("[%s] Failed to start audio engine.", MODULE_MAIN);
     return 1;
   }
+
+  log_info("[%s] Session initialized. Name: %s", MODULE_MAIN,
+           SessionGetName(SessionInstance));
   log_info("[%s] Audio engine started successfully.", MODULE_MAIN);
 
-  Running *main_running = RunningNew(SessionGetName(SessionInstance),
-                                     RunningGetLastPort(), RN_STATUS_UP);
-  int port = RunningGetLastPort();
+  int port = InstanceRegistryGetLastPort() + 1;
   HazeServer *mainServer = NULL;
 
+  // Loop responsável exclusivamente por encontrar e abrir a porta
   while (1) {
     mainServer = HazeServerNew(NULL, port);
 
@@ -85,17 +84,27 @@ int main(int argc, char **argv) {
 
     log_info("[%s] Haze Server successfully started on %s:%d", MODULE_MAIN,
              HazeServerAddress(mainServer), HazeServerPort(mainServer));
-    break;
+    break; // Sai do loop assim que conectar com sucesso
   }
 
-  Result res = RunningWriteFile(main_running);
-  if (!ResultIsOk(res))
-    log_error("Failed to write .running: %s", res.msg);
-  RunningFree(&main_running);
+  // 1. Grava a instância no arquivo do sistema
+  InstanceRegInstance =
+      InstanceRegistryNew(SessionInstance, PathsInstance, (unsigned short)port);
 
+  // 2. Configura os sinais de interrupção ANTES de rodar o evento
+  HazeServerSetupSignals(mainServer);
+
+  // 3. Executa o loop principal de eventos (bloqueante)
   HazeServerRun(mainServer);
 
-  log_warn("[%s] HazeServerRun returned unexpectedly.", MODULE_MAIN);
+  // 4. Executado somente após o sinal mandar parar o loop (uv_stop)
+  log_info("[%s] Shutting down and cleaning up resources...", MODULE_MAIN);
+
+  if (InstanceRegInstance) {
+    InstanceRegistryRemove(InstanceRegInstance);
+    InstanceRegistryFree(&InstanceRegInstance);
+  }
+
   HazeServerFree(&mainServer);
 
   log_info("[%s] Haze service shut down gracefully.", MODULE_MAIN);

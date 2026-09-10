@@ -26,6 +26,9 @@ static inline const char* SessionGetName(const Session* s) {
 static inline time_t SessionGetWorkingTime(const Session *s) {
     return time(NULL) - s->created_at;
 }
+static inline time_t SessionGetCreatedAt(const Session* s) {
+  return s->created_at;
+}
 
 const SampleList* SessionGetSampleList(Session *s);
 
