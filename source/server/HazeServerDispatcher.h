@@ -13,10 +13,8 @@ RawBuffer *HazeServerAPIDispatcher(RawBuffer *buffer)
     if (!request)
         return NULL;
 
-    Response *response = DispatchRPCMessage(
-        request->method,
-        request
-    );
+    // Passamos APENAS a struct request, exatamente como a função espera!
+    Response *response = DispatchRPCMessage(request);
 
     RequestFree(&request);
 

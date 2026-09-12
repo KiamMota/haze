@@ -63,7 +63,6 @@ static void haze_on_write_done(uv_write_t *req, int status) {
   free(wr);
 }
 
-
 static void _OnSignal(uv_signal_t *handle, int signum) {
   // Apenas o %d correspondente ao signum
   log_info("Signal %d received, stopping loop...", signum);
@@ -74,10 +73,12 @@ static void _OnSignal(uv_signal_t *handle, int signum) {
 }
 
 int HazeServerSetupSignals(HazeServer *server) {
-  if (!server) return -1;
+  if (!server)
+    return -1;
 
   uv_signal_t *sig = malloc(sizeof(uv_signal_t));
-  if (!sig) return -1;
+  if (!sig)
+    return -1;
 
   sig->data = (void *)1; // Marca o handle como alocado dinamicamente
 
@@ -86,7 +87,6 @@ int HazeServerSetupSignals(HazeServer *server) {
 
   return 0;
 }
-
 
 void haze_send(uv_stream_t *stream, const void *data, size_t len) {
   haze_write_req_t *req = malloc(sizeof(*req));
@@ -170,8 +170,13 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
 
     RawBuffer *response = HazeServerAPIDispatcher(&buffer);
 
-    if (!response)
+    if (!response) {
+      // Se não for apenas falta de dados (incomplete), mas um erro real:
+      log_error("ON READ",
+                "Falha critica no parser MsgPack. Desconectando cliente.");
+      uv_close((uv_handle_t *)stream, haze_on_close);
       break;
+    }
 
     haze_send(stream, RawBufferData(response), RawBufferLen(response));
 
@@ -294,7 +299,8 @@ static void _CloseWalkCb(uv_handle_t *handle, void *arg) {
 }
 
 void HazeServerFree(HazeServer **server_ptr) {
-  if (!server_ptr || !*server_ptr) return;
+  if (!server_ptr || !*server_ptr)
+    return;
 
   HazeServer *server = *server_ptr;
 
@@ -310,7 +316,8 @@ void HazeServerFree(HazeServer **server_ptr) {
   }
 
   // Libera o ponteiro da string alocada por strdup()
-  if (server->addr) { // Altere para o nome do campo se for server->host ou similar
+  if (server->addr) { // Altere para o nome do campo se for server->host ou
+                      // similar
     free((void *)server->addr);
     server->addr = NULL;
   }
