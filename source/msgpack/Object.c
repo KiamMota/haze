@@ -201,12 +201,12 @@ Object *ObjectCreateDouble(double v) {
     return myObj;
 }
 
-ObjectType ObjectGetType(Object *t) {
+ObjectType ObjectGetType(const Object *t) {
     if (!t) return OBJ_UND;
     return t->type;
 }
 
-ObjectValue ObjectGetValue(Object *t) {
+ObjectValue ObjectGetValue(const Object *t) {
     ObjectValue value = {0};
     if (!t) return value;
     return t->value;

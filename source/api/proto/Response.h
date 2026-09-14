@@ -49,5 +49,6 @@ Response* ResponseCreateNilResult(uint32_t msgid);
 Response* ResponseCreateOk(uint32_t msgid, void* v);
 Response* ResponseCreateResult(uint32_t msgid, Result res);
 Response* ResponseCreateInt(uint32_t msgid, int64_t value);
+char* ResponseToString(const Response* res);
 
 #endif /* PROTO_RESPONSE_H */

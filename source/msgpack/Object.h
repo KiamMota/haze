@@ -55,8 +55,8 @@ Object* ObjectCreateUInt(uint64_t v);
 Object* ObjectCreateFloat(float v);
 Object* ObjectCreateDouble(double v);
 Object* ObjectCreateStr(const char* str);
-ObjectType ObjectGetType(Object* t);
-ObjectValue ObjectGetValue(Object* t);
+ObjectType ObjectGetType(const Object* t);
+ObjectValue ObjectGetValue(const Object* t);
 size_t ObjectGetSize(Object* t);
 
 // arrays

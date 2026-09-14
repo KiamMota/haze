@@ -24,7 +24,7 @@ typedef struct {
  */
 RawBuffer *RawBufferNew(void *data, size_t len);
 
-static inline RawBuffer RawBufferInit(const void* data, size_t len)  {
+static inline RawBuffer RawBufferInit(void* data, size_t len)  {
   RawBuffer rb = {.data = data, .len = len};
   return rb;
 }
@@ -39,6 +39,8 @@ static inline RawBuffer RawBufferInit(const void* data, size_t len)  {
 void RawBufferFree(RawBuffer **bf);
 
 bool RawBufferAppend(RawBuffer*bf, void* data, size_t len);
+
+char* RawBufferToString(RawBuffer* bf);
 
 /**
  * @brief Returns the data stored in the buffer.

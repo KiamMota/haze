@@ -1,6 +1,7 @@
 #include "HazeServer.h"
 #include "HazeServerDispatcher.h"
 #include "RawBuffer.h"
+#include "api/proto/Response.h"
 #include "logc/log.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -8,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <uv.h>
+#include "stddef.h"
 
 /* ---------------------------------------------------------- */
 /* Conexão individual                                         */
@@ -144,7 +146,7 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     char *new_buffer = realloc(conn->buffer, new_cap);
 
     if (!new_buffer) {
-      log_error("ON ReAD", "Failed to resize connection buffer");
+      log_error("ON READ", "Failed to resize connection buffer");
 
       free(buf->base);
       uv_close((uv_handle_t *)stream, haze_on_close);
@@ -171,9 +173,9 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
     RawBuffer *response = HazeServerAPIDispatcher(&buffer);
 
     if (!response) {
-      // Se não for apenas falta de dados (incomplete), mas um erro real:
-      log_error("ON READ",
-                "Falha critica no parser MsgPack. Desconectando cliente.");
+      
+      fflush(stdout);
+      log_error("critical fail on msgpack-rpc parser. client disconnected.");
       uv_close((uv_handle_t *)stream, haze_on_close);
       break;
     }

@@ -92,10 +92,6 @@ func (c *Client) Call(method string, params ...any) (any, error) {
 		return nil, fmt.Errorf("conexão encerrada abruptamente pelo servidor")
 	}
 
-	if resp.Error != nil {
-		return nil, fmt.Errorf("erro no servidor: %v", resp.Error)
-	}
-
 	return resp.Result, nil
 }
 

@@ -1,6 +1,7 @@
 #include "RawBuffer.h"
 #include "HazeMacros.h"
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,12 +38,14 @@ void RawBufferFree(RawBuffer **b) {
 }
 
 bool RawBufferAppend(RawBuffer *bf, void *data, size_t len) {
-  if (!bf || !bf->data) return false;
-  if (!len) return false;
-  void * new_data = realloc(bf->data, bf->len + len);
+  if (!bf || !bf->data)
+    return false;
+  if (!len)
+    return false;
+  void *new_data = realloc(bf->data, bf->len + len);
   bf->data = new_data;
   bf->len += len;
-  memcpy((unsigned char *)bf->data + bf->len, data, len); 
+  memcpy((unsigned char *)bf->data + bf->len, data, len);
   return true;
 }
 
@@ -82,4 +85,11 @@ bool RawBufferClear(RawBuffer *b) {
 
   memset(b->data, 0, b->len);
   return true;
+}
+
+char *RawBufferToString(RawBuffer *bf) {
+  char *str = NULL;
+
+  snprintf(str, bf->len, "(rb)[%d]", bf->data);
+  return str;
 }

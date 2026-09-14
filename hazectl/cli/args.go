@@ -18,23 +18,23 @@ func TraitArgs(args []string) {
 	// REMOVIDO: args = args[:1] 
 
 	switch args[0] {
-	case "ps":
-		print("\n")
-		instances, err := hazefs.PathsInstance.ReadRunningFile()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		fmt.Print(cmd.ProcessStatus(instances))
-		break
-
+	// case "ps":
+	// 	print("\n")
+	// 	instances, err := hazefs.PathsInstance.ReadRunningFile()
+	// 	if err != nil {
+	// 		fmt.Println(err)
+	// 		return
+	// 	}
+	//
+	// 	fmt.Print(cmd.ProcessStatus(instances))
+	// 	break
+	//
 	case "request", "req":
 		// Como args[0] é o "req", precisamos ter pelo menos tamanho 3 
 		// (0: "req", 1: "localhost:7192", 2: "test/ping[]")
 		if len(args) < 3 {
 			fmt.Println("Error: request require: <ip:port> <module/acessor>[<parameters>]")
-			break
+		break
 		}
 
 		// O IP:Porta agora é o segundo argumento (índice 1)
@@ -117,8 +117,14 @@ func TraitArgs(args []string) {
 	case "doctor":
 		// hazepkg doctor
 
-	case "clean":
-		// hazepkg clean
+	case "clean": {
+		e := cmd.Clean(hazefs.PathsInstance.InstancesPath)
+		if e != nil {
+			fmt.Println(e.Error())
+		}
+
+		break
+	}
 
 	case "help":
 		// hazepkg help

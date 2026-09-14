@@ -1,4 +1,5 @@
 #include "Response.h"
+#include "RawBuffer.h"
 #include "Result.h"
 #include "logc/log.h"
 #include "mpack/mpack-common.h"
@@ -7,10 +8,10 @@
 #include "mpack/mpack-writer.h"
 #include "msgpack/MessagePackRPC.h"
 #include "msgpack/Object.h"
-#include "RawBuffer.h"
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -114,7 +115,8 @@ static Object *ObjectUnmarshalMPack(mpack_reader_t *reader) {
   case mpack_type_str: {
     uint32_t len = mpack_tag_str_length(&tag);
     char *buff = malloc(len + 1);
-    if (!buff) return NULL;
+    if (!buff)
+      return NULL;
     mpack_read_bytes(reader, buff, len);
     buff[len] = '\0';
     mpack_done_str(reader);
@@ -126,7 +128,8 @@ static Object *ObjectUnmarshalMPack(mpack_reader_t *reader) {
   case mpack_type_bin: {
     uint32_t len = mpack_tag_bin_length(&tag);
     void *buff = malloc(len);
-    if (!buff) return NULL;
+    if (!buff)
+      return NULL;
     mpack_read_bytes(reader, buff, len);
     mpack_done_bin(reader);
 
@@ -250,7 +253,8 @@ Response *ResponseUnmarshal(RawBuffer *b) {
     return NULL;
 
   mpack_reader_t reader;
-  mpack_reader_init_data(&reader, (const char *)RawBufferData(b), RawBufferLen(b));
+  mpack_reader_init_data(&reader, (const char *)RawBufferData(b),
+                         RawBufferLen(b));
 
   Response *response = NULL;
 
@@ -266,7 +270,8 @@ Response *ResponseUnmarshal(RawBuffer *b) {
 
   /* 1. type */
   response->type = (HazeServerRPCType)mpack_expect_u8(&reader);
-  if (mpack_reader_error(&reader) != mpack_ok || response->type != HAZE_RPC_RESPONSE) {
+  if (mpack_reader_error(&reader) != mpack_ok ||
+      response->type != HAZE_RPC_RESPONSE) {
     goto fail;
   }
 
@@ -321,7 +326,6 @@ bool ResponseFree(Response **response) {
 
   return true;
 }
-
 
 Response *ResponseCreateString(uint32_t msgid, const char *result) {
   Response *resp = ResponseNew();
@@ -384,12 +388,11 @@ Response *ResponseCreateStrArrayResult(uint32_t msgid, const char **values) {
   return resp;
 }
 
-Response* ResponseCreateNilResult(uint32_t msgid) {
-  Response* resp = ResponseNew();
+Response *ResponseCreateNilResult(uint32_t msgid) {
+  Response *resp = ResponseNew();
   ResponseSetMsgId(resp, msgid);
   ResponseSetResultObject(resp, ObjectCreateNil());
-  return resp; 
-
+  return resp;
 }
 
 Response *ResponseCreateResult(uint32_t msgid, Result res) {
@@ -408,12 +411,52 @@ Response *ResponseCreateResult(uint32_t msgid, Result res) {
   return resp;
 }
 
-Response* ResponseCreateInt(uint32_t msgid, int64_t value) {
-  Response* resp = ResponseNew();
-  if(!resp) return NULL;
+Response *ResponseCreateInt(uint32_t msgid, int64_t value) {
+  Response *resp = ResponseNew();
+  if (!resp)
+    return NULL;
 
   ResponseSetMsgId(resp, msgid);
 
   ResponseSetResultObject(resp, ObjectCreateInt(value));
   return resp;
+}
+
+char *ResponseToString(const Response *res) {
+  char *responseStr = (char *)malloc(1);
+
+  char *strError = strdup(ObjectGetValue(ResponseError(res)).str_value);
+  // starting making the resut in string
+  char *strResult = NULL;
+
+  const Object *resultObj = ResponseResult(res);
+
+  switch (ObjectGetType(resultObj)) {
+  case OBJ_NIL:
+    strResult = strdup("nil");
+  case OBJ_STR:
+    strResult = strdup(ObjectGetValue(resultObj).str_value);
+    break;
+  case OBJ_UND:
+    strResult = strdup("und");
+    break;
+  case OBJ_BOOL:
+    strResult = strdup(ObjectGetValue(resultObj).bool_value ? "true" : "false");
+  case OBJ_DOUBLE:
+  case OBJ_FLOAT:
+  case OBJ_INT:
+  case OBJ_UINT:
+    strResult = strdup("some integer");
+    break;
+  case OBJ_BIN:
+    strResult = strdup("<binary_encoded");
+    break;
+  default:
+    strResult = strdup("<undefined>");
+  }
+
+  sprintf(responseStr, "[%d,%d,%s,%s]", HAZE_RPC_RESPONSE, ResponseMsgId(res), strError, strResult);
+  free(strError);
+  free(strResult);
+  return responseStr;
 }

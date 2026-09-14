@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+
 /* Helper estático para serializar recursivamente qualquer Object no MPack Writer */
 static void ObjectMarshalMPack(mpack_writer_t *writer, const Object *obj) {
   if (!obj) {
@@ -362,7 +363,7 @@ Request *RequestUnmarshal(RawBuffer *b) {
 
 fail:
   if (mpack_reader_error(&reader) != mpack_ok) {
-    log_error("MPack Reader Error: %s",
+    log_error("mpack_reader Error: %s",
                  mpack_error_to_string(mpack_reader_error(&reader)));
   }
 

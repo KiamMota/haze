@@ -15,7 +15,7 @@ type Paths struct {
 	CommunityPath string
 	LogsPath      string
 
-	RunningFile 	string
+	InstancesPath 	string
 }
 
 var PathsInstance Paths
@@ -35,7 +35,7 @@ func (p *Paths) InitPaths() error {
 	p.CommunityPath = filepath.Join(p.RootHazePath, "community")
 	p.LogsPath = filepath.Join(p.RootHazePath, "logs")
 
-	p.RunningFile = filepath.Join(p.RootHazePath, ".running")
+	p.InstancesPath = filepath.Join(p.RootHazePath, "instances")
 
 	return nil
 }

@@ -87,7 +87,7 @@ Paths *PathsNew(void) {
     return NULL;
   }
 
-  const char *base = PathsJoin(home, ".haze", NULL);
+  const char *base = PathsJoin(home, "Haze", NULL);
   if (!base) {
     free((void *)p->home);
     free(p);
