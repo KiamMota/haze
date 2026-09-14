@@ -22,6 +22,6 @@ extern InstanceReg* InstanceRegInstance;
 InstanceReg *InstanceRegistryNew(Session* s, Paths* pt, unsigned short port);
 void InstanceRegistryFree(InstanceReg **r);
 Result InstanceRegistryRemove(InstanceReg *f);
-unsigned short InstanceRegistryGetLastPort(void);
+unsigned short InstanceRegistryGetLastPort(const Paths* pt);
 
 #endif

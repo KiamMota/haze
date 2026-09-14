@@ -1,7 +1,7 @@
 #include "HazeServer.h"
+#include "Context.h"
 #include "HazeServerDispatcher.h"
 #include "RawBuffer.h"
-#include "api/proto/Response.h"
 #include "logc/log.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -22,6 +22,7 @@ typedef struct {
   char *buffer;
   size_t buffer_len;
   size_t buffer_cap;
+  const Context* ctx;
 } HazeConn;
 
 typedef struct {
@@ -170,7 +171,7 @@ static void haze_on_read(uv_stream_t *stream, ssize_t nread,
   while (conn->buffer_len > 0) {
     RawBuffer buffer = RawBufferInit(conn->buffer, conn->buffer_len);
 
-    RawBuffer *response = HazeServerAPIDispatcher(&buffer);
+    RawBuffer *response = HazeServerAPIDispatcher(conn->ctx, &buffer);
 
     if (!response) {
       
@@ -212,9 +213,13 @@ static void haze_on_connect(uv_stream_t *server, int status) {
     return;
   }
 
+  HazeServer *haze = (HazeServer *)server->data;
+
   HazeConn *conn = calloc(1, sizeof(HazeConn));
   if (!conn)
     return;
+
+  conn->ctx = haze->ctx;
 
   int init_ret = uv_tcp_init(server->loop, &conn->handle);
   if (init_ret != 0) {
@@ -224,21 +229,30 @@ static void haze_on_connect(uv_stream_t *server, int status) {
 
   conn->handle.data = conn;
 
-  int accept_ret = uv_accept(server, (uv_stream_t *)&conn->handle);
+  int accept_ret =
+      uv_accept(server, (uv_stream_t *)&conn->handle);
+
   if (accept_ret != 0) {
-    uv_close((uv_handle_t *)&conn->handle, haze_on_close);
+    uv_close(
+        (uv_handle_t *)&conn->handle,
+        haze_on_close
+    );
     return;
   }
 
-  // ATIVAÇÃO DO NODELAY: Desativa o Algoritmo de Nagle para evitar o delay de
-  // 30ms em conexões persistentes
   uv_tcp_nodelay(&conn->handle, 1);
 
-  int read_ret =
-      uv_read_start((uv_stream_t *)&conn->handle, haze_on_alloc, haze_on_read);
+  int read_ret = uv_read_start(
+      (uv_stream_t *)&conn->handle,
+      haze_on_alloc,
+      haze_on_read
+  );
+
   if (read_ret != 0) {
-    uv_close((uv_handle_t *)&conn->handle, haze_on_close);
-    return;
+    uv_close(
+        (uv_handle_t *)&conn->handle,
+        haze_on_close
+    );
   }
 }
 
@@ -257,22 +271,34 @@ HazeServer *HazeServerNew(const char *addr, uint16_t port) {
 
   uv_tcp_init(s->loop, &s->tcp);
 
+  s->tcp.data = s;
+
   return s;
 }
 
-int HazeServerStart(HazeServer *s) {
-  if (!s)
+int HazeServerStart(const Context *ctx, HazeServer *s) {
+  if (!ctx || !s)
     return UV_EINVAL;
+
+  s->ctx = ctx;
 
   struct sockaddr_in bind_addr;
   uv_ip4_addr(s->addr, s->port, &bind_addr);
 
-  int r = uv_tcp_bind(&s->tcp, (const struct sockaddr *)&bind_addr, 0);
+  int r = uv_tcp_bind(
+      &s->tcp,
+      (const struct sockaddr *)&bind_addr,
+      0
+  );
+
   if (r != 0)
     return r;
 
-  r = uv_listen((uv_stream_t *)&s->tcp, 512, haze_on_connect);
-  return r;
+  return uv_listen(
+      (uv_stream_t *)&s->tcp,
+      512,
+      haze_on_connect
+  );
 }
 
 void HazeServerRun(HazeServer *s) {
@@ -317,7 +343,6 @@ void HazeServerFree(HazeServer **server_ptr) {
     server->loop = NULL;
   }
 
-  // Libera o ponteiro da string alocada por strdup()
   if (server->addr) { // Altere para o nome do campo se for server->host ou
                       // similar
     free((void *)server->addr);
@@ -325,6 +350,7 @@ void HazeServerFree(HazeServer **server_ptr) {
   }
 
   free(server);
+  
   *server_ptr = NULL;
 }
 

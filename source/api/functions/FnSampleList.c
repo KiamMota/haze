@@ -2,60 +2,41 @@
 
 #include "audio/Sample.h"
 #include "audio/SampleList.h"
-#include "session/Session.h"
 
-Result FnSampleListImportSample(const char *sample_path) {
+Result FnSampleListImportSample(SampleList* s, const char *sample_path) {
   if (!sample_path || sample_path[0] == '\0') {
     return ResultErr("Invalid sample path.");
   }
-
-  if (!SessionInstance) {
-    return ResultErr("No active session.");
-  }
-
-  SampleList *list = (SampleList *)SessionGetSampleList(SessionInstance);
-
-  if (!list) {
+  if (!s) {
     return ResultErr("No sample list.");
   }
 
-  return SampleListImportByFile(list, sample_path);
+  return SampleListImportByFile(s, sample_path);
 }
 
-Result FnSampleListRemoveSample(const char *sample_name) {
+Result FnSampleListRemoveSample(SampleList* s, const char *sample_name) {
   if (!sample_name || sample_name[0] == '\0') {
     return ResultErr("Invalid sample name.");
   }
 
-  if (!SessionInstance) {
-    return ResultErr("No active session.");
-  }
-
-  SampleList *list = (SampleList *)SessionGetSampleList(SessionInstance);
-
-  if (!list) {
+  if (!s) {
     return ResultErr("No sample list.");
   }
 
-  return SampleListDeleteSampleByName(list, sample_name);
+  return SampleListDeleteSampleByName(s, sample_name);
 }
 
-Result FnSamplePlay(const char *sample_name) {
+Result FnSamplePlay(SampleList* s, const char *sample_name) {
   if (!sample_name || sample_name[0] == '\0') {
     return ResultErr("Invalid sample name.");
   }
 
-  if (!SessionInstance) {
-    return ResultErr("No active session.");
-  }
 
-  SampleList *list = (SampleList *)SessionGetSampleList(SessionInstance);
-
-  if (!list) {
+  if (!s) {
     return ResultErr("No sample list.");
   }
 
-  Sample *sample = SampleListGetSampleByName(list, sample_name);
+  Sample *sample = SampleListGetSampleByName(s, sample_name);
 
   if (!sample) {
     return ResultErr("Sample not found.");

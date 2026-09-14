@@ -1,55 +1,46 @@
 #include "FnSession.h"
 #include "audio/Sample.h"
-#include "audio/SampleList.h"
 #include "session/Session.h"
 
 const char *Ping(void) { return "pong"; }
 
-Result FnSessionInit(void) {
-  if (SessionInstance == NULL) {
-    SessionInstance = SessionNew(NULL);
+Result FnSessionInit(Session* s) {
+  if (s == NULL) {
+    s = SessionNew(NULL);
     return ResultOk();
   }
 
   return ResultErr("The current session instance has already been created.");
 }
 
-Result FnSessionCreate(const char *session_name) {
+Result FnSessionCreate(Session* s, const char *session_name) {
   if (!session_name) {
     return ResultErr("Invalid session name.");
   }
 
-  if (!SessionInstance) {
-    SessionInstance = SessionNew(session_name);
+  if (!s) {
+    s = SessionNew(session_name);
     return ResultOk();
   }
 
   return ResultErr("Session already started!");
 }
 
-const char *FnSessionGetName(void) {
-  if (!SessionInstance) {
+const char *FnSessionGetName(const Session* s) {
+  if (!s) {
     return "";
   }
 
-  const char *name = SessionGetName(SessionInstance);
+  const char *name = SessionGetName(s);
   return name ? name : "";
 }
 
-time_t FnSessionGetWorkingTime(void) {
-  if (!SessionInstance) {
+time_t FnSessionGetWorkingTime(const Session* s) {
+  if (!s) {
     return 0;
   }
 
-  return SessionGetWorkingTime(SessionInstance);
-}
-
-Result FnSampleImport(const char *path) {
-  if (!SessionInstance || !SessionGetSampleList(SessionInstance)) {
-    return ResultErr("No active project or sample list.");
-  }
-
-  return SampleListImportByFile(SessionGetSampleList(SessionInstance), path);
+  return SessionGetWorkingTime(s);
 }
 
 

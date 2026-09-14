@@ -14,7 +14,6 @@ typedef struct {
   SampleList *SampleList;
 } Session;
 
-extern Session* SessionInstance;
 
 
 Session* SessionNew(const char* SessionName);
@@ -30,7 +29,7 @@ static inline time_t SessionGetCreatedAt(const Session* s) {
   return s->created_at;
 }
 
-const SampleList* SessionGetSampleList(Session *s);
+const SampleList* SessionGetSampleList(const Session *s);
 
 
 

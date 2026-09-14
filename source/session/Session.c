@@ -1,4 +1,5 @@
 #include "Session.h"
+#include "HazeMacros.h"
 #include "audio/SampleList.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -6,11 +7,9 @@
 #include <string.h>
 #include <time.h>
 
-Session *SessionInstance;
-
 #define NAME_MAX 15
 #define CLARA_NAME 67 + 76 + 65 + 82 + 65
-static  char *session_name_random(void) {
+static char *session_name_random(void) {
   srand(CLARA_NAME ^ (unsigned int)time(NULL));
   const char *first[NAME_MAX] = {
       "goofball", "biscuit", "wombat", "noodle", "badger",
@@ -51,13 +50,22 @@ Session *SessionNew(const char *session_name) {
   return s;
 }
 
-
 bool SessionSetName(Session *s, const char *SessionName) {
   free(s->session_name);
   s->session_name = strdup(SessionName);
   return s->session_name != NULL;
 }
 
-const SampleList* SessionGetSampleList(Session* s) {
+const SampleList *SessionGetSampleList(const Session *s) {
   return s->SampleList;
+}
+
+void SessionFree(Session **s) {
+  PTR_FREE_ASSERT(s);
+  free((*s)->session_name);
+  free((*s)->project_path);
+  fclose((*s)->log_file);
+  SampleListFree(&(*s)->SampleList);
+  free((*s));
+  *s = NULL;
 }

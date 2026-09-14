@@ -2,9 +2,10 @@
 #define DISPATCHER_H
 
 
+#include "Context.h"
 #include "api/proto/Request.h"
 #include "api/proto/Response.h"
 
-Response* DispatchRPCMessage(Request* rq);
+Response* DispatchRPCMessage(Context* ctx, Request* rq);
 
 #endif

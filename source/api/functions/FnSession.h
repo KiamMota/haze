@@ -2,6 +2,7 @@
 #define FUNCS_H
 
 #include "Result.h"
+#include "session/Session.h"
 #include <stdbool.h>
 #include <time.h>
 
@@ -13,7 +14,7 @@ const char* Ping(void);
 /// @description  Initialize the Haze session
 /// @return       Result
 /// @since        1.0.0
-Result FnSessionInit(void);
+Result FnSessionInit(Session* s);
 
 /// @module       session
 /// @acessor      create
@@ -21,21 +22,21 @@ Result FnSessionInit(void);
 /// @description  Create a new Haze session
 /// @return       Result
 /// @since        1.0.0
-Result FnSessionCreate(const char *session_name);
+Result FnSessionCreate(Session* s, const char *session_name);
 
 /// @module       session
 /// @acessor      get_name
 /// @description  Get the current session name
 /// @return       string
 /// @since        1.0.0
-const char *FnSessionGetName(void);
+const char *FnSessionGetName(const Session* s);
 
 /// @module       session
 /// @acessor      get_working_time
 /// @description  Get the current session working time
 /// @return       int
 /// @since        1.0.0
-time_t FnSessionGetWorkingTime(void);
+time_t FnSessionGetWorkingTime(const Session *s);
 
 
 

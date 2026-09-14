@@ -1,10 +1,9 @@
+#include "Context.h"
 #include "HazeVersion.h"
 #include "audio/HazeEngine.h"
-#include "fs/InstanceRegistry.h"
 #include "fs/Paths.h"
 #include "logc/log.h"
 #include "server/HazeServer.h"
-#include "session/Session.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,25 +34,21 @@ int main(int argc, char **argv) {
   if (!TraitArgs(argc, argv)) {
     return 0;
   }
+  Context* gi = ContextNew();
 
   log_info("Initializing Haze service (version %s)...", HAZE_VERSION_STR);
 
-  SessionInstance = SessionNew(NULL);
-  PathsInstance = PathsNew();
 
   if (!HazeEngineInit()) {
     log_error("Failed to start audio engine.");
     return 1;
   }
 
-  log_info("Session initialized. Name: %s",
-           SessionGetName(SessionInstance));
   log_info("Audio engine started successfully.");
 
-  int port = InstanceRegistryGetLastPort() + 1;
+  int port = InstanceRegistryGetLastPort(ContextGetPaths(gi));
   HazeServer *mainServer = NULL;
 
-  // Loop responsável exclusivamente por encontrar e abrir a porta
   while (1) {
     mainServer = HazeServerNew(NULL, port);
 
@@ -62,7 +57,7 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    int err = HazeServerStart(mainServer);
+    int err = HazeServerStart(gi, mainServer);
 
     if (err == UV_EADDRINUSE || err == UV_EACCES) {
       log_warn("Port %d is unavailable (%s), trying port %d...",
@@ -84,10 +79,6 @@ int main(int argc, char **argv) {
     break; // Sai do loop assim que conectar com sucesso
   }
 
-  // 1. Grava a instância no arquivo do sistema
-  InstanceRegInstance =
-      InstanceRegistryNew(SessionInstance, PathsInstance, (unsigned short)port);
-
   // 2. Configura os sinais de interrupção ANTES de rodar o evento
   HazeServerSetupSignals(mainServer);
 
@@ -97,12 +88,10 @@ int main(int argc, char **argv) {
   // 4. Executado somente após o sinal mandar parar o loop (uv_stop)
   log_info("Shutting down and cleaning up resources...");
 
-  if (InstanceRegInstance) {
-    InstanceRegistryRemove(InstanceRegInstance);
-    InstanceRegistryFree(&InstanceRegInstance);
-  }
 
   HazeServerFree(&mainServer);
+  log_info("cleaning context...");
+  ContextFree(&gi);
 
   log_info("Haze service shut down gracefully.");
   return 0;

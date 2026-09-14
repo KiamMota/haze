@@ -138,8 +138,8 @@ Result InstanceRegistryRemove(InstanceReg *r) {
   return ResultOk();
 }
 
-unsigned short InstanceRegistryGetLastPort(void) {
-  const char *dirPath = PathsGet(PathsInstance, PATHS_INSTANCES);
+unsigned short InstanceRegistryGetLastPort(const Paths* pt) {
+  const char *dirPath = PathsGet(pt, PATHS_INSTANCES);
   if (dirPath == NULL) {
     return 7191; // Retorna 7191 para que o main() some +1 e vire 7192
   }

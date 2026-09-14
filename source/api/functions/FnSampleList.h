@@ -2,13 +2,14 @@
 #define FN_SAMPLE_LIST_H
 
 #include "Result.h"
+#include "audio/SampleList.h"
 /// @module       sample_list
 /// @acessor      import
 /// @param        string sample_path
 /// @description  Import a sample into the current session
 /// @return       Result
 /// @since        1.0.0
-Result FnSampleListImportSample(const char *sample_path);
+Result FnSampleListImportSample(SampleList* s, const char *sample_path);
 
 /// @module sample_list
 /// @acessor import
@@ -17,7 +18,7 @@ Result FnSampleListImportSample(const char *sample_path);
 /// @return Result
 /// @since 1.0.0
 
-Result FnSampleListRemoveSample(const char *sample_name);
+Result FnSampleListRemoveSample(SampleList* s, const char *sample_name);
 
 /// @module       sample
 /// @acessor      play
@@ -25,6 +26,6 @@ Result FnSampleListRemoveSample(const char *sample_name);
 /// @description  Play a sample from the current session
 /// @return       Result
 /// @since        1.0.0
-Result FnSamplePlay(const char *sample_name);
+Result FnSamplePlay(SampleList* s, const char *sample_name);
 
 #endif

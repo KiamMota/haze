@@ -30,7 +30,6 @@ typedef enum {
   PATHS_INSTANCES,
 } PathsEnum;
 
-extern Paths* PathsInstance;
 
 Paths *PathsNew(void);
 void PathsFree(Paths **pt);

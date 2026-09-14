@@ -20,7 +20,6 @@
 #define PATH_SEP '/'
 #endif
 
-Paths *PathsInstance = NULL;
 
 const char *PathsJoin(const char *path, ...) {
   char buffer[4096];
