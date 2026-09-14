@@ -2,6 +2,7 @@
 #include "HazeEngine.h"
 #include "HazeMacros.h"
 #include "Result.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -76,12 +77,21 @@ Result SampleInit(Sample *s, const char *sample_name, const uint8_t *data, size_
     return (Result){ .success = true, .msg = NULL };
 }
 
+
 Result SampleInitFromFile(Sample *s, const char *path)
 {
+printf("DEBUG PATH RECEBIDO: [%s]\n", path);
+fflush(stdout);
     if (!s)
         return ResultMsgE("sample is null");
     if (!path || !*path)
         return ResultMsgE("invalid path");
+
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        return ResultMsgE("Arquivo nao encontrado ou sem permissao de leitura.");
+    }
+    fclose(f); // Fecha o arquivo pois a miniaudio vai abrir de novo do jeito dela
 
     if (ma_sound_init_from_file(HazeEngineGet(), path, 0, NULL, NULL, &s->handle) != MA_SUCCESS)
         return ResultMsgE("failed to load sample from file");

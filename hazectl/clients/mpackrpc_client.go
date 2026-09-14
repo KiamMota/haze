@@ -36,7 +36,6 @@ func NewClient(conn net.Conn) *Client {
 }
 
 // Call faz a chamada RPC e bloqueia até o servidor responder
-// Call faz a chamada RPC e bloqueia até o servidor responder
 func (c *Client) Call(method string, params ...any) (any, error) {
 	// 1. Gera um MsgID único de forma atômica (thread-safe)
 	msgID := atomic.AddUint32(&c.seq, 1)
