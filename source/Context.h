@@ -1,6 +1,7 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
+#include "audio/AudioEngine.h"
 #include "fs/InstanceRegistry.h"
 #include "fs/Paths.h"
 #include "session/Session.h"
@@ -15,6 +16,7 @@ typedef struct {
   Session* _session;
   Paths* _paths;
   InstanceReg* _instanceRegFile;
+  AudioEngine* _audioEngine;
 } Context;
 
 /**
@@ -59,5 +61,7 @@ const Paths* ContextGetPaths(const Context* gi);
  * @return A constant pointer to the instance registry.
  */
 const InstanceReg* ContextGetInstanceRegistry(const Context* gi);
+
+const AudioEngine* ContextGetAudioengine(const Context* ctx);
 
 #endif

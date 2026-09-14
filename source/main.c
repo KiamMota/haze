@@ -1,7 +1,5 @@
 #include "Context.h"
 #include "HazeVersion.h"
-#include "audio/HazeEngine.h"
-#include "fs/Paths.h"
 #include "logc/log.h"
 #include "server/HazeServer.h"
 #include <assert.h>
@@ -37,12 +35,7 @@ int main(int argc, char **argv) {
   Context* gi = ContextNew();
 
   log_info("Initializing Haze service (version %s)...", HAZE_VERSION_STR);
-
-
-  if (!HazeEngineInit()) {
-    log_error("Failed to start audio engine.");
-    return 1;
-  }
+ 
 
   log_info("Audio engine started successfully.");
 

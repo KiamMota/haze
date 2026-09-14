@@ -1,5 +1,6 @@
 #include "Context.h"
 #include "HazeMacros.h"
+#include "audio/AudioEngine.h"
 #include "fs/InstanceRegistry.h"
 #include "fs/Paths.h"
 #include <stdlib.h>
@@ -12,6 +13,7 @@ Context *ContextNew(void) {
   gi->_session = SessionNew(NULL);
   gi->_paths = PathsNew();
   gi->_instanceRegFile = InstanceRegistryNew(gi->_session, gi->_paths, 7192);
+  gi->_audioEngine = AudioEngineNew();
 
   if (!gi->_session || !gi->_paths || !gi->_instanceRegFile) {
     ContextFree(&gi);
@@ -33,6 +35,10 @@ void ContextFree(Context **gi) {
   if ((*gi)->_session)
     SessionFree(&(*gi)->_session);
 
+  if((*gi)->_audioEngine) {
+    AudioEngineFree(&(*gi)->_audioEngine);
+  }
+
   free(*gi);
   *gi = NULL;
 }
@@ -48,4 +54,8 @@ const Paths* ContextGetPaths(const Context* gi) {
 }
 const InstanceReg* ContextGetInstanceRegistry(const Context* gi) {
   return gi->_instanceRegFile;
+}
+
+const AudioEngine* ContextGetAudioEngine(const Context* ctx) {
+  return ctx->_audioEngine;
 }
