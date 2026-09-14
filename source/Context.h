@@ -62,6 +62,6 @@ const Paths* ContextGetPaths(const Context* gi);
  */
 const InstanceReg* ContextGetInstanceRegistry(const Context* gi);
 
-const AudioEngine* ContextGetAudioengine(const Context* ctx);
+const AudioEngine* ContextGetAudioEngine(const Context* ctx);
 
 #endif

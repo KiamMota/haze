@@ -1,9 +1,10 @@
 #include "FnSampleList.h"
 
+#include "audio/AudioEngine.h"
 #include "audio/Sample.h"
 #include "audio/SampleList.h"
 
-Result FnSampleListImportSample(SampleList* s, const char *sample_path) {
+Result FnSampleListImportSample(SampleList* s, const AudioEngine* eng, const char *sample_path) {
   if (!sample_path || sample_path[0] == '\0') {
     return ResultErr("Invalid sample path.");
   }
@@ -11,7 +12,7 @@ Result FnSampleListImportSample(SampleList* s, const char *sample_path) {
     return ResultErr("No sample list.");
   }
 
-  return SampleListImportByFile(s, sample_path);
+  return SampleListImportByFile(s, eng, sample_path);
 }
 
 Result FnSampleListRemoveSample(SampleList* s, const char *sample_name) {

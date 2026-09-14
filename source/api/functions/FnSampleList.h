@@ -2,6 +2,7 @@
 #define FN_SAMPLE_LIST_H
 
 #include "Result.h"
+#include "audio/AudioEngine.h"
 #include "audio/SampleList.h"
 /// @module       sample_list
 /// @acessor      import
@@ -9,7 +10,7 @@
 /// @description  Import a sample into the current session
 /// @return       Result
 /// @since        1.0.0
-Result FnSampleListImportSample(SampleList* s, const char *sample_path);
+Result FnSampleListImportSample(SampleList* s, const AudioEngine* eng, const char *sample_path);
 
 /// @module sample_list
 /// @acessor import

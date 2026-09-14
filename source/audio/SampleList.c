@@ -1,5 +1,6 @@
 #include "SampleList.h"
 #include "HazeMacros.h"
+#include "audio/AudioEngine.h"
 #include "audio/Sample.h"
 
 #include <stdint.h>
@@ -30,7 +31,7 @@ void SampleListFree(SampleList **list) {
   *list = NULL;
 }
 
-Result SampleListImportByFile(SampleList *list, const char *path) {
+Result SampleListImportByFile(SampleList *list, const AudioEngine* eng, const char *path) {
   if (!list || !path)
     return ResultErr("invalid argument");
 
@@ -42,7 +43,7 @@ Result SampleListImportByFile(SampleList *list, const char *path) {
 
   sample->id = index;
 
-  Result result = SampleInitFromFile(sample, path);
+  Result result = SampleInitFromFile(sample, eng, path);
   if (!ResultIsOk(result)) {
     SampleFree(&sample);
     return result;

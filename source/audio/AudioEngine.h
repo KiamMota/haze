@@ -1,5 +1,5 @@
-#ifndef HAZEENGINE_DEC
-#define HAZEENGINE_DEC
+#ifndef AUDIOENGINE_H
+#define AUDIOENGINE_H
 
 #include "miniaudio/miniaudio.h"
 #include <stdbool.h>

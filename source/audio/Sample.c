@@ -1,7 +1,7 @@
 #include "Sample.h"
-#include "HazeEngine.h"
 #include "HazeMacros.h"
 #include "Result.h"
+#include "audio/AudioEngine.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +9,7 @@
 Sample *SampleNew(void)
 {
     Sample *s = malloc(sizeof(Sample));
+
     if (!s)
         return NULL;
 
@@ -18,6 +19,7 @@ Sample *SampleNew(void)
         free(s);
         return NULL;
     }
+
     s->sample_name[0] = '\0';
     s->volume = 1.0f;
     s->pitch = 1.0f;
@@ -25,7 +27,7 @@ Sample *SampleNew(void)
     return s;
 }
 
-Result SampleInit(Sample *s, const char *sample_name, const uint8_t *data, size_t size)
+Result SampleInit(Sample *s, const AudioEngine* eng, const char *sample_name, const uint8_t *data, size_t size)
 {
     if (!s)
         return ResultMsgE("sample is null");
@@ -47,7 +49,7 @@ Result SampleInit(Sample *s, const char *sample_name, const uint8_t *data, size_
         return ResultMsgE("failed to init decoder");
     }
 
-    if (ma_sound_init_from_data_source(HazeEngineGet(), &s->decoder, 0, NULL, &s->handle) != MA_SUCCESS) {
+    if (ma_sound_init_from_data_source(eng, &s->decoder, 0, NULL, &s->handle) != MA_SUCCESS) {
         ma_decoder_uninit(&s->decoder);
         free(s->buf);
         s->buf = NULL;
@@ -56,7 +58,7 @@ Result SampleInit(Sample *s, const char *sample_name, const uint8_t *data, size_
 
     ma_uint64 frames;
     ma_sound_get_length_in_pcm_frames(&s->handle, &frames);
-    ma_uint32 rate = ma_engine_get_sample_rate(HazeEngineGet());
+    ma_uint32 rate = ma_engine_get_sample_rate(eng);
 
     s->duration = (float)frames / (float)rate;
     s->sample_rate = rate;
@@ -78,7 +80,7 @@ Result SampleInit(Sample *s, const char *sample_name, const uint8_t *data, size_
 }
 
 
-Result SampleInitFromFile(Sample *s, const char *path)
+Result SampleInitFromFile(Sample *s, const AudioEngine* eng, const char *path)
 {
 printf("DEBUG PATH RECEBIDO: [%s]\n", path);
 fflush(stdout);
@@ -93,13 +95,13 @@ fflush(stdout);
     }
     fclose(f); // Fecha o arquivo pois a miniaudio vai abrir de novo do jeito dela
 
-    if (ma_sound_init_from_file(HazeEngineGet(), path, 0, NULL, NULL, &s->handle) != MA_SUCCESS)
+    if (ma_sound_init_from_file(eng, path, 0, NULL, NULL, &s->handle) != MA_SUCCESS)
         return ResultMsgE("failed to load sample from file");
 
     ma_uint64 frames;
     ma_sound_get_length_in_pcm_frames(&s->handle, &frames);
 
-    s->sample_rate = ma_engine_get_sample_rate(HazeEngineGet());
+    s->sample_rate = ma_engine_get_sample_rate(eng);
     s->duration = (float)frames / (float)s->sample_rate;
     s->volume = 1.0f;
     s->pitch = 1.0f;
@@ -125,7 +127,7 @@ Result SampleSeek(Sample *s, double seconds)
     if (!s)
         return ResultMsgE("sample is null");
 
-    ma_uint32 rate = ma_engine_get_sample_rate(HazeEngineGet());
+    ma_uint32 rate = s->sample_rate;
     ma_uint64 frame = (ma_uint64)(seconds * rate);
 
     if (ma_sound_seek_to_pcm_frame(&s->handle, frame) != MA_SUCCESS)

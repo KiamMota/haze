@@ -1,25 +1,26 @@
 #include "FnSession.h"
+#include "audio/AudioEngine.h"
 #include "audio/Sample.h"
 #include "session/Session.h"
 
 const char *Ping(void) { return "pong"; }
 
-Result FnSessionInit(Session* s) {
+Result FnSessionInit(Session* s, const AudioEngine* eng) {
   if (s == NULL) {
-    s = SessionNew(NULL);
+    s = SessionNew(NULL, eng);
     return ResultOk();
   }
 
   return ResultErr("The current session instance has already been created.");
 }
 
-Result FnSessionCreate(Session* s, const char *session_name) {
+Result FnSessionCreate(Session* s, const AudioEngine* eng, const char *session_name) {
   if (!session_name) {
     return ResultErr("Invalid session name.");
   }
 
   if (!s) {
-    s = SessionNew(session_name);
+    s = SessionNew(session_name, eng);
     return ResultOk();
   }
 

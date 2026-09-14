@@ -3,17 +3,23 @@
 #include "audio/AudioEngine.h"
 #include "fs/InstanceRegistry.h"
 #include "fs/Paths.h"
+#include "logc/log.h"
 #include <stdlib.h>
 
 Context *ContextNew(void) {
   Context *gi = malloc(sizeof(Context));
   if (!gi)
     return NULL;
+  log_debug("CONTEXT", "Initializated.");
 
-  gi->_session = SessionNew(NULL);
   gi->_paths = PathsNew();
+  log_debug("CONTEXT", "Paths started.");
   gi->_instanceRegFile = InstanceRegistryNew(gi->_session, gi->_paths, 7192);
+  log_debug("CONTEXT", "Registry started.");
   gi->_audioEngine = AudioEngineNew();
+  log_debug("CONTEXT", "Audio engine started.");
+  gi->_session = SessionNew(NULL, gi->_audioEngine);
+  log_debug("CONTEXT", "Session started.");
 
   if (!gi->_session || !gi->_paths || !gi->_instanceRegFile) {
     ContextFree(&gi);
@@ -35,7 +41,7 @@ void ContextFree(Context **gi) {
   if ((*gi)->_session)
     SessionFree(&(*gi)->_session);
 
-  if((*gi)->_audioEngine) {
+  if ((*gi)->_audioEngine) {
     AudioEngineFree(&(*gi)->_audioEngine);
   }
 
@@ -43,19 +49,12 @@ void ContextFree(Context **gi) {
   *gi = NULL;
 }
 
-
-const Session* ContextGetSession(const Context* gi) {
-
-  return gi->_session;
-}
-const Paths* ContextGetPaths(const Context* gi) {
-  return gi->_paths;
-
-}
-const InstanceReg* ContextGetInstanceRegistry(const Context* gi) {
+const Session *ContextGetSession(const Context *gi) { return gi->_session; }
+const Paths *ContextGetPaths(const Context *gi) { return gi->_paths; }
+const InstanceReg *ContextGetInstanceRegistry(const Context *gi) {
   return gi->_instanceRegFile;
 }
 
-const AudioEngine* ContextGetAudioEngine(const Context* ctx) {
+const AudioEngine *ContextGetAudioEngine(const Context *ctx) {
   return ctx->_audioEngine;
 }

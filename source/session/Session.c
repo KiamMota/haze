@@ -1,6 +1,9 @@
 #include "Session.h"
 #include "HazeMacros.h"
+#include "audio/AudioEngine.h"
+#include "audio/ChannelList.h"
 #include "audio/SampleList.h"
+#include "logc/log.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,8 +35,9 @@ static char *session_name_random(void) {
   return name;
 }
 
-Session *SessionNew(const char *session_name) {
+Session *SessionNew(const char *session_name, const AudioEngine* eng) {
   Session *s = malloc(sizeof(Session));
+  log_debug("SESSION", "Initializated.");
 
   if (!s)
     return NULL;
@@ -47,6 +51,10 @@ Session *SessionNew(const char *session_name) {
     s->session_name = strdup(session_name);
 
   s->SampleList = SampleListNew();
+  log_debug("SESSION", "SampleList");
+  s->ChannelList = ChannelListNew(eng);
+  log_debug("SESSION", "ChannelList");
+   
   return s;
 }
 
@@ -64,7 +72,6 @@ void SessionFree(Session **s) {
   PTR_FREE_ASSERT(s);
   free((*s)->session_name);
   free((*s)->project_path);
-  fclose((*s)->log_file);
   SampleListFree(&(*s)->SampleList);
   free((*s));
   *s = NULL;

@@ -35,8 +35,6 @@ int main(int argc, char **argv) {
   Context* gi = ContextNew();
 
   log_info("Initializing Haze service (version %s)...", HAZE_VERSION_STR);
- 
-
   log_info("Audio engine started successfully.");
 
   int port = InstanceRegistryGetLastPort(ContextGetPaths(gi));
@@ -69,16 +67,13 @@ int main(int argc, char **argv) {
 
     log_info("Haze Server successfully started on %s:%d",
              HazeServerAddress(mainServer), HazeServerPort(mainServer));
-    break; // Sai do loop assim que conectar com sucesso
+    break; 
   }
 
-  // 2. Configura os sinais de interrupção ANTES de rodar o evento
   HazeServerSetupSignals(mainServer);
 
-  // 3. Executa o loop principal de eventos (bloqueante)
   HazeServerRun(mainServer);
 
-  // 4. Executado somente após o sinal mandar parar o loop (uv_stop)
   log_info("Shutting down and cleaning up resources...");
 
 

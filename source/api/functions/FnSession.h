@@ -2,6 +2,7 @@
 #define FUNCS_H
 
 #include "Result.h"
+#include "audio/AudioEngine.h"
 #include "session/Session.h"
 #include <stdbool.h>
 #include <time.h>
@@ -14,7 +15,7 @@ const char* Ping(void);
 /// @description  Initialize the Haze session
 /// @return       Result
 /// @since        1.0.0
-Result FnSessionInit(Session* s);
+Result FnSessionInit(Session* s, const AudioEngine* eng);
 
 /// @module       session
 /// @acessor      create
@@ -22,7 +23,7 @@ Result FnSessionInit(Session* s);
 /// @description  Create a new Haze session
 /// @return       Result
 /// @since        1.0.0
-Result FnSessionCreate(Session* s, const char *session_name);
+  Result FnSessionCreate(Session* s, const AudioEngine* eng,const char *session_name);
 
 /// @module       session
 /// @acessor      get_name

@@ -1,6 +1,7 @@
 #include "Context.h"
 #include "api/functions/FnSampleList.h"
 #include "api/functions/FnSession.h"
+#include "audio/AudioEngine.h"
 #include "msgpack/Object.h"
 #include "api/proto/Request.h"
 #include "api/proto/Response.h"
@@ -15,6 +16,7 @@ Response *DispatchRPCMessage(const Context *ctx, Request *rq) {
   if (!ctx || !rq)
     return ResponseCreateError(0, "Invalid context or request.");
 
+  const AudioEngine* eng = ContextGetAudioEngine(ctx);
   const Session *session = ContextGetSession(ctx);
   const SampleList *sampleList = SessionGetSampleList(session);
 
@@ -43,7 +45,7 @@ Response *DispatchRPCMessage(const Context *ctx, Request *rq) {
 
     return ResponseCreateResult(
         msgid,
-        FnSessionCreate(session, ObjectGetStr(obj)));
+        FnSessionCreate(session, eng, ObjectGetStr(obj)));
   }
 
   if (strcmp(method_name, "session/get_name") == 0) {
@@ -75,7 +77,7 @@ Response *DispatchRPCMessage(const Context *ctx, Request *rq) {
 
     return ResponseCreateResult(
         msgid,
-        FnSampleListImportSample(sampleList, ObjectGetStr(obj)));
+        FnSampleListImportSample(sampleList, eng, ObjectGetStr(obj)));
   }
 
   if (strcmp(method_name, "samplelist/remove") == 0) {
