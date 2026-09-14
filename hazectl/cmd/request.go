@@ -1,6 +1,5 @@
 package cmd
 
-<<<<<<< HEAD
 import (
 	"fmt"
 	"net"
@@ -27,12 +26,5 @@ func Request(address string, port int, req *msgpackrpc.Request) (msgpackrpc.Resp
 	var resp msgpackrpc.Response	
 	resp.Init(req.MsgId, nil, result)
 	return resp, nil
-=======
-import "hazectl/proto"
-
-func Request(port int, funcName string, params []any) {
-	var req proto.Request
-	req.Init(1, funcName, params)
-
->>>>>>> 84ea09b (add: more functions)
 }
+
