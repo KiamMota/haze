@@ -1,11 +1,8 @@
 #include "Result.h"
 #include "api/functions/FnSampleList.h"
 #include "api/functions/FnSession.h"
-<<<<<<< HEAD
 #include "audio/Sample.h"
 #include "msgpack/Object.h"
-=======
->>>>>>> 84ea09b (add: more functions)
 #include "api/proto/Request.h"
 #include "api/proto/Response.h"
 #include "audio/SampleList.h"

@@ -211,29 +211,16 @@ Object *ObjectCreateDouble(double v) {
   return myObj;
 }
 
-<<<<<<< HEAD
 ObjectType ObjectGetType(const Object *t) {
     if (!t) return OBJ_UND;
     return t->type;
 }
 
 ObjectValue ObjectGetValue(const Object *t) {
-    ObjectValue value = {0};
-    if (!t) return value;
-    return t->value;
-=======
-ObjectType ObjectGetType(Object *t) {
-  if (!t)
-    return OBJ_UND;
-  return t->type;
-}
-
-ObjectValue ObjectGetValue(Object *t) {
   ObjectValue value = {0};
   if (!t)
     return value;
   return t->value;
->>>>>>> 84ea09b (add: more functions)
 }
 
 size_t ObjectGetSize(Object *t) {

@@ -1,5 +1,4 @@
 #include "InstanceRegistry.h"
-#include "HazeMacros.h"
 #include "RawBuffer.h"
 #include "Result.h"
 #include "fs/Paths.h"
@@ -31,10 +30,21 @@ static RawBuffer *_InstanceRegistryWrite(InstanceReg *reg) {
 
   mpack_writer_t writer;
   mpack_writer_init(&writer, buffer, sizeof(buffer));
+
+  mpack_start_map(&writer, 4);
+
+  mpack_write_cstr(&writer, "pid");
   mpack_write_u64(&writer, reg->pid);
+
+  mpack_write_cstr(&writer, "port");
   mpack_write_u16(&writer, reg->port);
+
+  mpack_write_cstr(&writer, "session_name");
   mpack_write_cstr(&writer, reg->session_name);
+
+  mpack_write_cstr(&writer, "created_at");
   mpack_write_u64(&writer, reg->created_at);
+
   mpack_finish_map(&writer);
 
   if (mpack_writer_error(&writer) != mpack_ok) {
@@ -49,9 +59,7 @@ static RawBuffer *_InstanceRegistryWrite(InstanceReg *reg) {
   mpack_writer_destroy(&writer);
 
   return result;
-}
-
-InstanceReg *InstanceRegistryNew(Session *inst, Paths *pt,
+}InstanceReg *InstanceRegistryNew(Session *inst, Paths *pt,
                                  unsigned short port) {
   InstanceReg *iReg = malloc(sizeof(InstanceReg));
   if (!iReg)

@@ -241,6 +241,16 @@ target_link_libraries(
     uv
 )
 
+if(WIN32)
+    add_custom_command(
+        TARGET hazec
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:uv>"
+            "$<TARGET_FILE_DIR:hazec>"
+    )
+endif()
+
 if(TARGET haze_third_party)
 
     target_link_libraries(

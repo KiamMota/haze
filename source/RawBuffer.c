@@ -87,17 +87,16 @@ bool RawBufferClear(RawBuffer *b) {
   return true;
 }
 
-<<<<<<< HEAD
 char *RawBufferToString(RawBuffer *bf) {
   char *str = NULL;
 
   snprintf(str, bf->len, "(rb)[%d]", bf->data);
   return str;
-=======
+}
+
 RawBuffer* RawBufferDup(RawBuffer* bf) {
   RawBuffer* newBuff = RawBufferNew(bf->data, bf->len);
   if (!newBuff) return NULL;
   return newBuff;
 
->>>>>>> 84ea09b (add: more functions)
 }
