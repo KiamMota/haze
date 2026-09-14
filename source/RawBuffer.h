@@ -99,4 +99,6 @@ static inline bool RawBufferIsNullOrEmpty(RawBuffer* b)
     return b->data == NULL || b->len == 0;
 }
 
+RawBuffer* RawBufferDup(RawBuffer* bf);
+
 #endif

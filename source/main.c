@@ -10,6 +10,7 @@
 #include <string.h>
 #include <uv.h>
 
+
 void VersionMessage(void) { fprintf(stdout, "haze %s\n", HAZE_VERSION_STR); }
 
 int TraitArgs(int argc, char **argv) {

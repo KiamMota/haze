@@ -1,16 +1,25 @@
 #include "Result.h"
 #include "api/functions/FnSampleList.h"
 #include "api/functions/FnSession.h"
+<<<<<<< HEAD
 #include "audio/Sample.h"
 #include "msgpack/Object.h"
+=======
+>>>>>>> 84ea09b (add: more functions)
 #include "api/proto/Request.h"
 #include "api/proto/Response.h"
+#include "audio/SampleList.h"
+#include "msgpack/Object.h"
+#include "session/Session.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 Response *DispatchRPCMessage(Request *rq) {
+
+  SampleList *sampleList = SessionGetSampleList(SessionInstance);
+
   if (!rq) {
     return ResponseCreateError(0, "Invalid request.");
   }
@@ -65,7 +74,7 @@ Response *DispatchRPCMessage(Request *rq) {
     return ResponseCreateInt(msgid, (int64_t)FnSessionGetWorkingTime());
   }
 
-  if (strcmp(method_name, "sample_list/import") == 0) {
+  if (strcmp(method_name, "samplelist/import") == 0) {
     if (RequestParamCount(rq) != 1) {
       return ResponseCreateError(msgid, "Expected 1 parameter.");
     }
@@ -82,7 +91,8 @@ Response *DispatchRPCMessage(Request *rq) {
       return ResponseCreateError(msgid, "Invalid sample path.");
     }
 
-    return ResponseCreateResult(msgid, FnSampleListImportSample(value.str_value));
+    return ResponseCreateResult(msgid,
+                                FnSampleListImportSample(value.str_value));
   }
 
   if (strcmp(method_name, "sample/play") == 0) {
@@ -113,4 +123,17 @@ Response *DispatchRPCMessage(Request *rq) {
   }
 
   return ResponseCreateError(msgid, "Method not found.");
+
+  if (strcmp(method_name, "samplelist/remove") == 0) {
+    if (RequestParamCount(rq) < 1) {
+      return ResponseCreateError(msgid, "Expected 1 parameter");
+    }
+    Object *obj = RequestParamGet(rq, 0);
+    if (!ObjectExpect(obj, OBJ_STR)) {
+      return ResponseCreateError(msgid, "Object is not an string");
+    }
+    const char *str = ObjectGetStr(obj);
+    Result res = SampleListDeleteSampleByName(sampleList, str);
+    return ResponseCreateResult(msgid, res);
+  }
 }

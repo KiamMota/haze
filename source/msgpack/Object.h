@@ -43,6 +43,8 @@ typedef struct {
   size_t size;
 } Object;
 
+// objects
+
 Object* ObjectNew(void);
 void ObjectFree(Object** ptr_to_object);
 Object* ObjectCopy(const Object* v);
@@ -58,6 +60,19 @@ Object* ObjectCreateStr(const char* str);
 ObjectType ObjectGetType(const Object* t);
 ObjectValue ObjectGetValue(const Object* t);
 size_t ObjectGetSize(Object* t);
+
+bool ObjectExpect(Object* t, ObjectType v);
+const char *ObjectGetStr(Object *t);
+bool ObjectGetBool(Object *t);
+int64_t ObjectGetInt(Object *t);
+uint64_t ObjectGetUInt(Object *t);
+float ObjectGetFloat(Object *t);
+double ObjectGetDouble(Object *t);
+RawBuffer *ObjectGetBin(Object *t);
+ObjectArray *ObjectGetArray(Object *t);
+
+// TO DO: ObjectMap *ObjectGetMap(Object *t);
+
 
 // arrays
 
