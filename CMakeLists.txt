@@ -378,3 +378,6 @@ install(
     TARGETS hazec
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+enable_testing()
+add_subdirectory(tests/unit)

@@ -10,8 +10,10 @@ Contributions are welcome as long as they remain consistent with the project's a
 
 To build Haze, use the build script provided for your platform:
 
-* [eng/build.sh](eng/build.sh) for Unix-like systems
-* [eng/build.ps1](eng/build.ps1) for Windows
+```
+cd eng
+go run build.go
+``` 
 
 Make sure your development environment provides:
 
