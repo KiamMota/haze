@@ -192,19 +192,19 @@ list(
 )
 
 add_library(
-    haze_core
+    hazecore
     STATIC
     ${HAZE_LIB_SOURCES}
 )
 
 target_include_directories(
-    haze_core
+    hazecore
     PUBLIC
     "${HAZE_SOURCE_DIR}"
 )
 
 target_link_libraries(
-    haze_core
+    hazecore
     PUBLIC
     uv
 )
@@ -212,7 +212,7 @@ target_link_libraries(
 if(TARGET haze_third_party)
 
     target_link_libraries(
-        haze_core
+        hazecore
         PUBLIC
         haze_third_party
     )
@@ -231,13 +231,13 @@ add_executable(
 
 target_include_directories(
     hazec
-    PRIVATE
+    PUBLIC
     "${HAZE_SOURCE_DIR}"
 )
 
 target_link_libraries(
     hazec
-    PRIVATE
+    PUBLIC
     uv
 )
 
@@ -292,7 +292,7 @@ endif()
 if(UNIX AND NOT APPLE)
 
     target_compile_definitions(
-        haze_core
+        hazecore
         PRIVATE
         _XOPEN_SOURCE=700
     )
@@ -313,7 +313,7 @@ endif()
 if(MSVC)
 
     target_compile_options(
-        haze_core
+        hazecore
         PRIVATE
         /W4
     )
@@ -327,7 +327,7 @@ if(MSVC)
 else()
 
     target_compile_options(
-        haze_core
+        hazecore
         PRIVATE
         -Wall
         -Wextra
