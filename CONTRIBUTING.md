@@ -10,8 +10,8 @@ Contributions are welcome as long as they remain consistent with the project's a
 
 To build Haze, use the build script provided for your platform:
 
-* `eng/build.sh` for Unix-like systems
-* `eng/build.ps1` for Windows
+* [eng/build.sh](eng/build.sh) for Unix-like systems
+* [eng/build.ps1](eng/build.ps1) for Windows
 
 Make sure your development environment provides:
 
@@ -28,13 +28,13 @@ After a successful build, the resulting Haze binary is named `hazec`.
 
 ### Understanding the Build System
 
-If you already have a basic understanding of software builds and CMake, please read the project's `CMakeLists.txt` before making changes to the build system.
+If you already have a basic understanding of software builds and CMake, please read the project's [CMakeLists.txt](./CMakeLists.txt) before making changes to the build system.
 
 This will help you understand how Haze is configured, compiled, and linked.
 
 ## Project Structure
 
-The source code is organized into modules under the `source/` directory.
+The source code is organized into modules under the [source/](./source) directory.
 
 Each directory generally represents a module of the project. Related `.c` and `.h` files are kept together, and modules may contain submodules through nested directories.
 
@@ -62,20 +62,6 @@ Channel *ChannelCreate(void);
 Channel *channel = ChannelCreate();
 int channelCount = 0;
 ```
-
-### Pointer Handling
-
-When obtaining a pointer from another object, copy the pointer value instead of creating another reference to the pointer itself.
-
-Prefer:
-
-```c
-Channel *channel = list->channels[index];
-```
-
-Avoid unnecessary pointer-to-pointer relationships when a copied pointer is sufficient.
-
-This keeps ownership, lifetime, and indirection explicit.
 
 ## Git Workflow
 
