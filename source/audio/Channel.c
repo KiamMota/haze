@@ -1,6 +1,6 @@
 #include "Channel.h"
-#include "Result.h"
 #include "audio/AudioEngine.h"
+#include "audio/ResultAudio.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,21 +23,21 @@ Channel *ChannelNew(const AudioEngine *eng, const Channel *parent) {
   return ch;
 }
 
-Result ChannelRename(Channel *c, const char *newName) {
+ResultAudio ChannelRename(Channel *c, const char *newName) {
   if (!c || !newName) {
-    return ResultMsgE("invalid argument");
+    return ResultAudioErr("invalid argument");
   }
 
   char *name = strdup(newName);
 
   if (!name) {
-    return ResultMsgE("err alloc");
+    return ResultAudioErr("Erro allocating name");
   }
 
   free((char *)c->chann_name);
   c->chann_name = name;
 
-  return ResultOk();
+  return ResultAudioOk();
 }
 
 void ChannelFree(Channel **ch) {

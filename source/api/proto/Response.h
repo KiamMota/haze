@@ -1,6 +1,7 @@
 #ifndef PROTO_RESPONSE_H
 #define PROTO_RESPONSE_H
 
+#include "audio/ResultAudio.h"
 #include "msgpack/MessagePackRPC.h"
 #include "RawBuffer.h"
 #include "Result.h"
@@ -48,6 +49,7 @@ Response *ResponseCreateError(uint32_t msgid, const char *err);
 Response* ResponseCreateNilResult(uint32_t msgid);
 Response* ResponseCreateOk(uint32_t msgid, void* v);
 Response* ResponseCreateResult(uint32_t msgid, Result res);
+Response* ResponseCreateResultAudio(uint32_t msgid, ResultAudio res);
 Response* ResponseCreateInt(uint32_t msgid, int64_t value);
 char* ResponseToString(const Response* res);
 

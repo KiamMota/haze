@@ -422,11 +422,19 @@ Response *ResponseCreateInt(uint32_t msgid, int64_t value) {
   return resp;
 }
 
+Response* ResponseCreateResultAudio(uint32_t msgid, ResultAudio res) {
+    Response *r = res.success
+        ? ResponseCreateNilResult(msgid)
+        : ResponseCreateError(msgid, res.msg);
+
+    ResultAudioFree(&res);   
+    return r;
+}
+
 char *ResponseToString(const Response *res) {
   char *responseStr = (char *)malloc(1);
 
   char *strError = strdup(ObjectGetValue(ResponseError(res)).str_value);
-  // starting making the resut in string
   char *strResult = NULL;
 
   const Object *resultObj = ResponseResult(res);

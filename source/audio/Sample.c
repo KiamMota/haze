@@ -1,6 +1,6 @@
 #include "Sample.h"
 #include "HazeMacros.h"
-#include "Result.h"
+#include "ResultAudio.h"
 #include "audio/AudioEngine.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,18 +27,18 @@ Sample *SampleNew(void)
     return s;
 }
 
-Result SampleInit(Sample *s, const AudioEngine* eng, const char *sample_name, const uint8_t *data, size_t size)
+ResultAudio SampleInit(Sample *s, const AudioEngine* eng, const char *sample_name, const uint8_t *data, size_t size)
 {
     if (!s)
-        return ResultMsgE("sample is null");
+        return ResultAudioErr("sample is null");
     if (!data || size == 0)
-        return ResultMsgE("invalid data");
+        return ResultAudioErr("invalid data");
     if (!sample_name)
-        return ResultMsgE("sample name is null");
+        return ResultAudioErr("sample name is null");
 
     s->buf = malloc(size);
     if (!s->buf)
-        return ResultMsgE("out of memory");
+        return ResultAudioErr("out of memory");
 
     memcpy(s->buf, data, size);
     s->buf_size = size;
@@ -46,14 +46,14 @@ Result SampleInit(Sample *s, const AudioEngine* eng, const char *sample_name, co
     if (ma_decoder_init_memory(s->buf, size, NULL, &s->decoder) != MA_SUCCESS) {
         free(s->buf);
         s->buf = NULL;
-        return ResultMsgE("failed to init decoder");
+        return ResultAudioErrF("failed to init decoder for '%s'", sample_name);
     }
 
     if (ma_sound_init_from_data_source(eng, &s->decoder, 0, NULL, &s->handle) != MA_SUCCESS) {
         ma_decoder_uninit(&s->decoder);
         free(s->buf);
         s->buf = NULL;
-        return ResultMsgE("failed to init sound");
+        return ResultAudioErrF("failed to init sound for '%s'", sample_name);
     }
 
     ma_uint64 frames;
@@ -72,31 +72,29 @@ Result SampleInit(Sample *s, const AudioEngine* eng, const char *sample_name, co
         ma_decoder_uninit(&s->decoder);
         free(s->buf);
         s->buf = NULL;
-        return ResultMsgE("out of memory");
+        return ResultAudioErr("out of memory");
     }
     strcpy(s->sample_name, sample_name);
 
-    return (Result){ .success = true, .msg = NULL };
+    return ResultAudioOk();
 }
 
 
-Result SampleInitFromFile(Sample *s, const AudioEngine* eng, const char *path)
+ResultAudio SampleInitFromFile(Sample *s, const AudioEngine* eng, const char *path)
 {
-printf("DEBUG PATH RECEBIDO: [%s]\n", path);
-fflush(stdout);
     if (!s)
-        return ResultMsgE("sample is null");
+        return ResultAudioErr("sample is null");
     if (!path || !*path)
-        return ResultMsgE("invalid path");
+        return ResultAudioErr("invalid path");
 
     FILE *f = fopen(path, "rb");
     if (!f) {
-        return ResultMsgE("Arquivo nao encontrado ou sem permissao de leitura.");
+        return ResultAudioErrF("arquivo nao encontrado ou sem permissao de leitura: '%s'", path);
     }
     fclose(f); // Fecha o arquivo pois a miniaudio vai abrir de novo do jeito dela
 
     if (ma_sound_init_from_file(eng, path, 0, NULL, NULL, &s->handle) != MA_SUCCESS)
-        return ResultMsgE("failed to load sample from file");
+        return ResultAudioErrF("failed to load sample from file: '%s'", path);
 
     ma_uint64 frames;
     ma_sound_get_length_in_pcm_frames(&s->handle, &frames);
@@ -115,31 +113,31 @@ fflush(stdout);
     s->sample_name = malloc(strlen(name) + 1);
     if (!s->sample_name) {
         ma_sound_uninit(&s->handle);
-        return ResultMsgE("out of memory");
+        return ResultAudioErr("out of memory");
     }
     strcpy(s->sample_name, name);
 
-    return (Result){ .success = true, .msg = NULL };
+    return ResultAudioOk();
 }
 
-Result SampleSeek(Sample *s, double seconds)
+ResultAudio SampleSeek(Sample *s, double seconds)
 {
     if (!s)
-        return ResultMsgE("sample is null");
+        return ResultAudioErr("sample is null");
 
     ma_uint32 rate = s->sample_rate;
     ma_uint64 frame = (ma_uint64)(seconds * rate);
 
     if (ma_sound_seek_to_pcm_frame(&s->handle, frame) != MA_SUCCESS)
-        return ResultMsgE("failed to seek");
+        return ResultAudioErrF("failed to seek '%s' to %.2fs", s->sample_name, seconds);
 
-    return (Result){ .success = true, .msg = NULL };
+    return ResultAudioOk();
 }
 
-Result SampleSetVolume(Sample *s, float v)
+ResultAudio SampleSetVolume(Sample *s, float v)
 {
     if (!s)
-        return ResultMsgE("sample is null");
+        return ResultAudioErr("sample is null");
 
     if (v < 0.0f)
         v = 0.0f;
@@ -149,29 +147,29 @@ Result SampleSetVolume(Sample *s, float v)
     s->volume = v;
     ma_sound_set_volume(&s->handle, v);
 
-    return (Result){ .success = true, .msg = NULL };
+    return ResultAudioOk();
 }
 
-Result SamplePlay(Sample *s)
+ResultAudio SamplePlay(Sample *s)
 {
     if (!s)
-        return ResultMsgE("sample is null");
+        return ResultAudioErr("sample is null");
 
     if (ma_sound_start(&s->handle) != MA_SUCCESS)
-        return ResultMsgE("failed to play sample");
+        return ResultAudioErrF("failed to play sample '%s'", s->sample_name);
 
-    return (Result){ .success = true, .msg = NULL };
+    return ResultAudioOk();
 }
 
-Result SampleStop(Sample *s)
+ResultAudio SampleStop(Sample *s)
 {
     if (!s)
-        return ResultMsgE("sample is null");
+        return ResultAudioErr("sample is null");
 
     if (ma_sound_stop(&s->handle) != MA_SUCCESS)
-        return ResultMsgE("failed to stop sample");
+        return ResultAudioErrF("failed to stop sample '%s'", s->sample_name);
 
-    return (Result){ .success = true, .msg = NULL };
+    return ResultAudioOk();
 }
 
 void SampleFree(Sample **s)
@@ -191,21 +189,21 @@ void SampleFree(Sample **s)
     *s = NULL;
 }
 
-Result SampleRename(Sample *s, const char *newName)
+ResultAudio SampleRename(Sample *s, const char *newName)
 {
     if (!s)
-        return ResultMsgE("sample is null");
+        return ResultAudioErr("sample is null");
     if (!newName)
-        return ResultMsgE("new name is null");
+        return ResultAudioErr("new name is null");
 
     char *copy = strdup(newName);
     if (!copy)
-        return ResultMsgE("out of memory");
+        return ResultAudioErr("out of memory");
 
     free(s->sample_name);
     s->sample_name = copy;
 
-    return ResultOk();
+    return ResultAudioOk();
 }
 
 /* ===================== getters ===================== */

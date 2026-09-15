@@ -1,8 +1,8 @@
 #ifndef FN_SAMPLE_LIST_H
 #define FN_SAMPLE_LIST_H
 
-#include "Result.h"
 #include "audio/AudioEngine.h"
+#include "audio/ResultAudio.h"
 #include "audio/SampleList.h"
 /// @module       sample_list
 /// @acessor      import
@@ -10,7 +10,7 @@
 /// @description  Import a sample into the current session
 /// @return       Result
 /// @since        1.0.0
-Result FnSampleListImportSample(SampleList* s, const AudioEngine* eng, const char *sample_path);
+ResultAudio FnSampleListImportSample(SampleList* s, const AudioEngine* eng, const char *sample_path);
 
 /// @module sample_list
 /// @acessor import
@@ -19,7 +19,7 @@ Result FnSampleListImportSample(SampleList* s, const AudioEngine* eng, const cha
 /// @return Result
 /// @since 1.0.0
 
-Result FnSampleListRemoveSample(SampleList* s, const char *sample_name);
+ResultAudio FnSampleListRemoveSample(SampleList* s, const char *sample_name);
 
 /// @module       sample
 /// @acessor      play
@@ -27,6 +27,6 @@ Result FnSampleListRemoveSample(SampleList* s, const char *sample_name);
 /// @description  Play a sample from the current session
 /// @return       Result
 /// @since        1.0.0
-Result FnSamplePlay(SampleList* s, const char *sample_name);
+ResultAudio FnSamplePlay(SampleList* s, const char *sample_name);
 
 #endif

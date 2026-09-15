@@ -1,9 +1,9 @@
 #ifndef CHANNEL_LIST_H
 #define CHANNEL_LIST_H
 
-#include "Result.h"
 #include "audio/AudioEngine.h"
 #include "audio/Channel.h"
+#include "audio/ResultAudio.h"
 
 typedef struct {
   size_t quantity;
@@ -12,6 +12,6 @@ typedef struct {
 
 ChannelList* ChannelListNew(const AudioEngine* eng);
 void ChannelListFree(ChannelList** chann);
-Result ChannelListAdd(ChannelList* clist, const AudioEngine* eng);
+ResultAudio ChannelListAdd(ChannelList* clist, const AudioEngine* eng);
 
 #endif

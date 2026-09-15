@@ -3,6 +3,7 @@
 #include "Result.h"
 #include "audio/AudioEngine.h"
 #include "audio/Channel.h"
+#include "audio/ResultAudio.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -38,9 +39,9 @@ ChannelList *ChannelListNew(const AudioEngine *eng) {
 }
 
 
-Result ChannelListAdd(ChannelList *clist, const AudioEngine *eng) {
+ResultAudio ChannelListAdd(ChannelList *clist, const AudioEngine *eng) {
   if (!clist || !eng) {
-    return ResultMsgE("invalid argument");
+    return ResultAudioErr("invalid argument");
   }
 
   size_t index = clist->quantity;
@@ -51,29 +52,29 @@ Result ChannelListAdd(ChannelList *clist, const AudioEngine *eng) {
   );
 
   if (!channels) {
-    return ResultMsgE("err alloc");
+    return ResultAudioErr("err alloc");
   }
 
   clist->channels = channels;
 
   Channel *channel = ChannelNew(eng, NULL);
   if (!channel) {
-    return ResultMsgE("err alloc");
+    return ResultAudioErr("err alloc");
   }
 
   char name[32];
   snprintf(name, sizeof(name), "Channel %zu", index + 1);
 
-  Result renameResult = ChannelRename(channel, name);
-  if (!ResultIsOk(renameResult)) {
+  ResultAudio renameResult = ChannelRename(channel, name);
+  if (!ResultAudioIsOk(renameResult)) {
     ChannelFree(&channel);
-    return renameResult;
+    return ResultAudioErr(renameResult.msg);
   }
 
   clist->channels[index] = channel;
   clist->quantity++;
 
-  return ResultOk();
+  return ResultAudioOk();
 }
 
 

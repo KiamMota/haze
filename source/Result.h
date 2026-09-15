@@ -28,8 +28,10 @@
 #ifndef RESULT_H
 #define RESULT_H
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 /**
 
@@ -116,6 +118,10 @@ static inline Result ResultErr(const char *msg) {
   return (Result){.success = false, .msg = msg};
 }
 
+static inline bool ResultIsOk(const Result res) {
+  return res.success;
+}
+
 /**
 
 * @brief Checks whether a Result represents a successful operation.
@@ -124,6 +130,5 @@ static inline Result ResultErr(const char *msg) {
 *
 * @return true if the operation succeeded, false otherwise.
   */
-static inline bool ResultIsOk(Result res) { return res.success; }
 
 #endif /* RESULT_H */

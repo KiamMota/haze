@@ -1,8 +1,8 @@
 #ifndef HAZECHANNEL_DEC
 #define HAZECHANNEL_DEC
 
-#include "Result.h"
 #include "audio/AudioEngine.h"
+#include "audio/ResultAudio.h"
 #include <stdbool.h>
 
 typedef struct {
@@ -15,7 +15,7 @@ typedef struct {
 } Channel;
 
 Channel *ChannelNew(const AudioEngine* eng, const Channel* parent);
-Result ChannelRename(Channel* c, const char* newName);
+ResultAudio ChannelRename(Channel* c, const char* newName);
 void ChannelFree(Channel **hzc);
 float ChannelVolume(Channel *v);
 float ChannelPan(Channel *v);

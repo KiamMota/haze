@@ -20,6 +20,8 @@ Session *SessionNew(const char *SessionName, const AudioEngine* eng);
 void SessionFree(Session **s);
 bool SessionSetName(Session *s, const char *SessionName);
 static inline const char *SessionGetName(const Session *s) {
+  if (!s) return "";
+  if (!s->session_name) return "";
   return s->session_name;
 }
 static inline time_t SessionGetWorkingTime(const Session *s) {

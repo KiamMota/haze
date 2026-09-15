@@ -1,6 +1,7 @@
 #include "SampleList.h"
 #include "HazeMacros.h"
 #include "audio/AudioEngine.h"
+#include "audio/ResultAudio.h"
 #include "audio/Sample.h"
 
 #include <stdint.h>
@@ -31,20 +32,21 @@ void SampleListFree(SampleList **list) {
   *list = NULL;
 }
 
-Result SampleListImportByFile(SampleList *list, const AudioEngine* eng, const char *path) {
+ResultAudio SampleListImportByFile(SampleList *list, const AudioEngine *eng,
+                                   const char *path) {
   if (!list || !path)
-    return ResultErr("invalid argument");
+    return ResultAudioErr("invalid argument");
 
   uint64_t index = list->len;
 
   Sample *sample = SampleNew();
   if (!sample)
-    return ResultErr("failed to allocate sample");
+    return ResultAudioErr("failed to allocate sample");
 
   sample->id = index;
 
-  Result result = SampleInitFromFile(sample, eng, path);
-  if (!ResultIsOk(result)) {
+  ResultAudio result = SampleInitFromFile(sample, eng, path);
+  if (!ResultAudioIsOk(result)) {
     SampleFree(&sample);
     return result;
   }
@@ -65,7 +67,7 @@ Result SampleListImportByFile(SampleList *list, const AudioEngine* eng, const ch
 
     if (!new_name) {
       SampleFree(&sample);
-      return ResultErr("failed to allocate sample name");
+      return ResultAudioErr("failed to allocate sample name");
     }
 
     snprintf(new_name, len + 32, "%s #%d", name, occurrences);
@@ -79,19 +81,17 @@ Result SampleListImportByFile(SampleList *list, const AudioEngine* eng, const ch
 
   if (!new_samples) {
     SampleFree(&sample);
-    return ResultErr("failed to resize sample list");
+    return ResultAudioErr("failed to resize sample list");
   }
 
   list->samples = new_samples;
   list->samples[index] = sample;
   list->len++;
 
-  return ResultOk();
+  return ResultAudioOk();
 }
 
-uint64_t SampleListLen(SampleList *list) {
-  return list ? list->len : 0;
-}
+uint64_t SampleListLen(SampleList *list) { return list ? list->len : 0; }
 
 const char **SampleListStr(SampleList *list) {
   if (!list)
@@ -122,28 +122,116 @@ const char **SampleListStr(SampleList *list) {
   return strvec;
 }
 
-Result SampleListDeleteSampleByName(SampleList *list, const char *name) {
+ResultAudio SampleListDeleteSampleByName(
+    SampleList *list,
+    const char *name
+) {
+  /*
+   * Validação básica dos argumentos.
+   *
+   * `list` precisa existir porque vamos acessar:
+   *   - list->samples
+   *   - list->len
+   *
+   * `name` também precisa existir porque será usado no strcmp().
+   *
+   * Retornamos erro sem executar nenhuma operação.
+   */
   if (!list || !name)
-    return ResultErr("invalid argument");
+    return ResultAudioErr("invalid argument");
 
+  /*
+   * Percorremos todos os samples atualmente armazenados.
+   *
+   * `list->len` representa a quantidade lógica de elementos.
+   * Portanto, só precisamos examinar os índices [0, len).
+   */
   for (uint64_t i = 0; i < list->len; i++) {
     Sample *sample = list->samples[i];
 
+    /*
+     * Há duas situações em que este elemento não pode ser
+     * o sample procurado:
+     *
+     * 1. O ponteiro é NULL.
+     * 2. O nome não coincide.
+     *
+     * Nesse caso, simplesmente continuamos para o próximo.
+     */
     if (!sample || strcmp(sample->sample_name, name) != 0)
       continue;
 
+    /*
+     * Encontramos o sample.
+     *
+     * Primeiro liberamos o objeto apontado pelo elemento atual.
+     *
+     * Passar `&list->samples[i]` é importante porque SampleFree()
+     * pode colocar o ponteiro em NULL depois de liberar a memória.
+     */
     SampleFree(&list->samples[i]);
 
+    /*
+     * Agora precisamos compactar o vetor.
+     *
+     * Exemplo:
+     *
+     *   [A, B, C, D]
+     *       ^
+     *       i = 1
+     *
+     * Depois de remover B, queremos:
+     *
+     *   [A, C, D, NULL]
+     *
+     * Então cada elemento seguinte é movido uma posição para trás.
+     *
+     * O `j + 1 < list->len` garante que nunca acessaremos
+     * uma posição além do último elemento válido.
+     */
     for (uint64_t j = i; j + 1 < list->len; j++)
       list->samples[j] = list->samples[j + 1];
 
+    /*
+     * O último elemento agora ficou duplicado logicamente.
+     *
+     * Exemplo, depois da movimentação:
+     *
+     *   [A, C, D, D]
+     *
+     * A posição final já não pertence à lista, então limpamos
+     * explicitamente esse ponteiro:
+     *
+     *   [A, C, D, NULL]
+     */
     list->samples[list->len - 1] = NULL;
+
+    /*
+     * Reduzimos a quantidade lógica de elementos.
+     *
+     * Importante: não fazemos realloc aqui.
+     *
+     * A capacidade alocada do vetor continua a mesma.
+     * Apenas `len` diminui.
+     *
+     * Isso evita uma realocação toda vez que um sample é removido.
+     */
     list->len--;
 
-    return ResultOk();
+    /*
+     * A remoção foi concluída.
+     *
+     * Como o nome procurado deve corresponder a um elemento,
+     * podemos terminar imediatamente a função.
+     */
+    return ResultAudioOk();
   }
 
-  return ResultErr("sample not found");
+  /*
+   * Se chegamos aqui, percorremos toda a lista e nenhum sample
+   * correspondeu ao nome informado.
+   */
+  return ResultAudioErr("sample not found");
 }
 
 Sample *SampleListGetSampleByName(SampleList *list, const char *name) {

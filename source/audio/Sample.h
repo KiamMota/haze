@@ -1,15 +1,13 @@
 #ifndef HAZESAMPLE_DEC
 #define HAZESAMPLE_DEC
 
-#include "HazeMacros.h"
-#include "Result.h"
 #include "audio/AudioEngine.h"
+#include "audio/ResultAudio.h"
 #include "miniaudio/miniaudio.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-EXPORT_CPP_BEGIN
 
 typedef struct {
   uint64_t id;
@@ -27,14 +25,14 @@ typedef struct {
 Sample *SampleNew(void);
 void SampleFree(Sample **s);
 
-Result SampleRename(Sample *s, const char *newName);
-Result SampleInit(Sample *s, const AudioEngine *eng, const char *sample_name,
+ResultAudio SampleRename(Sample *s, const char *newName);
+ResultAudio SampleInit(Sample *s, const AudioEngine *eng, const char *sample_name,
                   const uint8_t *data, size_t size);
-Result SampleInitFromFile(Sample *s, const AudioEngine* eng, const char *path);
-Result SampleSeek(Sample *s, double seconds);
-Result SampleSetVolume(Sample *s, float v);
-Result SamplePlay(Sample *s);
-Result SampleStop(Sample *s);
+ResultAudio SampleInitFromFile(Sample *s, const AudioEngine* eng, const char *path);
+ResultAudio SampleSeek(Sample *s, double seconds);
+ResultAudio SampleSetVolume(Sample *s, float v);
+ResultAudio SamplePlay(Sample *s);
+ResultAudio SampleStop(Sample *s);
 
 /* getters */
 bool SampleIsPlaying(Sample *s);
@@ -45,5 +43,4 @@ float SampleGetSampleRate(Sample *s);
 float SampleGetCursor(Sample *s);
 const char *SampleGetName(Sample *s);
 
-EXPORT_CPP_END
 #endif

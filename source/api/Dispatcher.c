@@ -75,7 +75,7 @@ Response *DispatchRPCMessage(const Context *ctx, Request *rq) {
     if (!ObjectExpect(obj, OBJ_STR))
       return ResponseCreateError(msgid, "Expected a string.");
 
-    return ResponseCreateResult(
+    return ResponseCreateResultAudio(
         msgid,
         FnSampleListImportSample(sampleList, eng, ObjectGetStr(obj)));
   }
@@ -89,12 +89,12 @@ Response *DispatchRPCMessage(const Context *ctx, Request *rq) {
     if (!ObjectExpect(obj, OBJ_STR))
       return ResponseCreateError(msgid, "Expected a string.");
 
-    return ResponseCreateResult(
+    return ResponseCreateResultAudio(
         msgid,
         FnSampleListRemoveSample(sampleList, ObjectGetStr(obj)));
   }
 
-  if (strcmp(method_name, "sample/play") == 0) {
+  if (strcmp(method_name, "samplelist/play") == 0) {
     if (RequestParamCount(rq) != 1)
       return ResponseCreateError(msgid, "Expected 1 parameter.");
 
@@ -103,7 +103,7 @@ Response *DispatchRPCMessage(const Context *ctx, Request *rq) {
     if (!ObjectExpect(obj, OBJ_STR))
       return ResponseCreateError(msgid, "Expected a string.");
 
-    return ResponseCreateResult(
+    return ResponseCreateResultAudio(
         msgid,
         FnSamplePlay(sampleList, ObjectGetStr(obj)));
   }

@@ -10,16 +10,18 @@ Context *ContextNew(void) {
   Context *gi = malloc(sizeof(Context));
   if (!gi)
     return NULL;
-  log_debug("CONTEXT", "Initializated.");
+  log_debug("CONTEXT Initializated.");
+
+  gi->_audioEngine = AudioEngineNew();
+  log_debug("CONTEXT Audio engine started.");
+
+  gi->_session = SessionNew(NULL, gi->_audioEngine);
+  log_debug("CONTEXT Session started.");
 
   gi->_paths = PathsNew();
-  log_debug("CONTEXT", "Paths started.");
+  log_debug("CONTEXT Paths started.");
   gi->_instanceRegFile = InstanceRegistryNew(gi->_session, gi->_paths, 7192);
-  log_debug("CONTEXT", "Registry started.");
-  gi->_audioEngine = AudioEngineNew();
-  log_debug("CONTEXT", "Audio engine started.");
-  gi->_session = SessionNew(NULL, gi->_audioEngine);
-  log_debug("CONTEXT", "Session started.");
+  log_debug("CONTEXT Registry started.");
 
   if (!gi->_session || !gi->_paths || !gi->_instanceRegFile) {
     ContextFree(&gi);

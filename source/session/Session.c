@@ -37,7 +37,7 @@ static char *session_name_random(void) {
 
 Session *SessionNew(const char *session_name, const AudioEngine* eng) {
   Session *s = malloc(sizeof(Session));
-  log_debug("SESSION", "Initializated.");
+  log_debug("SESSION Initializated.");
 
   if (!s)
     return NULL;
@@ -51,9 +51,9 @@ Session *SessionNew(const char *session_name, const AudioEngine* eng) {
     s->session_name = strdup(session_name);
 
   s->SampleList = SampleListNew();
-  log_debug("SESSION", "SampleList");
+  log_debug("SESSION SampleList started.");
   s->ChannelList = ChannelListNew(eng);
-  log_debug("SESSION", "ChannelList");
+  log_debug("SESSION ChannelList started.");
    
   return s;
 }
