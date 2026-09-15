@@ -11,6 +11,9 @@ b/
 # Precompiled Headers
 *.gch
 *.pch
+*.wav
+*.mp3
+*.ogg
 
 # Linker files
 *.ilk
